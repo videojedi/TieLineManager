@@ -36,6 +36,12 @@
     "mac": {
       "category": "public.app-category.utilities",
       "icon": "build/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "identity": "Video Walrus Ltd. (RC6P9CGHN7)",
+      "notarize": false,
       "target": [
         {
           "target": "dmg",
