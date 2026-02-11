@@ -1,0 +1,2706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
+  <title>Tie-Line Manager</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #e0e0e0;
+      min-height: 100vh;
+    }
+
+    .app-container { display: flex; flex-direction: column; height: 100vh; }
+
+    /* Header */
+    .header {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .header-left { display: flex; align-items: center; gap: 15px; }
+
+    .header h1 { font-size: 1.3rem; font-weight: 600; color: #fff; }
+
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .router-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 15px;
+      font-size: 0.8rem;
+    }
+
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #ff4757;
+      transition: background 0.3s;
+    }
+    .status-dot.active { background: #2ed573; box-shadow: 0 0 8px #2ed573; }
+    .status-dot.connecting { background: #ffa502; animation: pulse 1s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Tabs */
+    .tab-bar {
+      display: flex;
+      background: rgba(0, 0, 0, 0.2);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .tab-btn {
+      padding: 10px 24px;
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { color: #ccc; background: rgba(255,255,255,0.05); }
+    .tab-btn.active { color: #fff; border-bottom-color: #4a69bd; }
+
+    /* Tab content */
+    .tab-content { display: none; flex: 1; overflow: hidden; }
+    .tab-content.active { display: flex; flex-direction: column; }
+
+    /* Buttons */
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 5px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: #4a69bd; color: #fff; }
+    .btn-primary:hover { background: #6a89cc; }
+    .btn-success { background: #2ed573; color: #1a1a2e; }
+    .btn-success:hover { background: #7bed9f; }
+    .btn-danger { background: #e74c3c; color: #fff; }
+    .btn-danger:hover { background: #c0392b; }
+    .btn-small { padding: 5px 10px; font-size: 0.8rem; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Form controls */
+    .config-group { margin-bottom: 12px; }
+    .config-group label { display: block; font-size: 0.8rem; margin-bottom: 4px; color: #aaa; }
+    .config-group input, .config-group select {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 4px;
+      background: rgba(0,0,0,0.3);
+      color: #fff;
+      font-size: 0.85rem;
+    }
+    .config-group input:focus, .config-group select:focus {
+      outline: none;
+      border-color: #4a69bd;
+    }
+
+    /* Checkbox */
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .checkbox-group input[type="checkbox"] { width: auto; }
+    .checkbox-group label { margin-bottom: 0; color: #ccc; font-size: 0.85rem; }
+
+    /* ============ SETUP TAB ============ */
+    .setup-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .setup-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .router-panel {
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+      padding: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .router-panel h3 {
+      font-size: 1rem;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .router-panel h3 .router-badge {
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .router-badge.badge-a { background: #4a69bd; color: #fff; }
+    .router-badge.badge-b { background: #e17055; color: #fff; }
+
+    .router-panel .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .router-panel .connection-status {
+      margin-top: 10px;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+    }
+    .connection-status.connected { background: rgba(46,213,115,0.15); color: #2ed573; }
+    .connection-status.disconnected { background: rgba(255,71,87,0.15); color: #ff4757; }
+    .connection-status.connecting { background: rgba(255,165,2,0.15); color: #ffa502; }
+
+    /* Tie-line config section */
+    .tieline-section {
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+      padding: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+      margin-bottom: 20px;
+    }
+
+    .tieline-section h3 {
+      font-size: 1rem;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .tieline-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+    }
+    .tieline-table th, .tieline-table td {
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      font-size: 0.85rem;
+    }
+    .tieline-table th { color: #888; font-weight: 500; }
+    .tieline-table td select {
+      padding: 4px 8px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 3px;
+      color: #fff;
+      font-size: 0.8rem;
+    }
+    .tieline-table .remove-btn {
+      background: none;
+      border: none;
+      color: #e74c3c;
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 2px 6px;
+    }
+    .tieline-table .remove-btn:hover { color: #ff6b6b; }
+
+    .tieline-add-row td { background: rgba(74,105,189,0.1); }
+    .tieline-port-select {
+      padding: 4px 8px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 3px;
+      color: #fff;
+      font-size: 0.8rem;
+      max-width: 140px;
+    }
+    .tieline-port-select option:disabled { color: #666; }
+    .tieline-confirm-btn, .tieline-cancel-btn {
+      padding: 2px 8px !important;
+      font-size: 0.85rem !important;
+      margin-right: 4px;
+    }
+    .tieline-add-row select {
+      padding: 6px 10px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 4px;
+      color: #fff;
+      font-size: 0.85rem;
+    }
+
+    /* Settings section */
+    .settings-section {
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+      padding: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .settings-section h3 { font-size: 1rem; margin-bottom: 15px; }
+
+    /* ============ XY TAB ============ */
+    .xy-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .xy-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      background: rgba(0,0,0,0.2);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      flex-wrap: wrap;
+    }
+
+    .xy-toolbar .toolbar-label {
+      font-size: 0.8rem;
+      color: #888;
+    }
+
+    .salvo-quick-buttons {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .salvo-quick-btn {
+      padding: 4px 10px;
+      background: rgba(74,105,189,0.3);
+      border: 1px solid rgba(74,105,189,0.5);
+      border-radius: 3px;
+      color: #ccc;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .salvo-quick-btn:hover { background: rgba(74,105,189,0.6); color: #fff; }
+
+    .xy-grid-container {
+      flex: 1;
+      overflow: auto;
+      position: relative;
+    }
+
+    .xy-grid-wrapper {
+      display: inline-block;
+      min-width: 100%;
+    }
+
+    .xy-grid {
+      border-collapse: separate;
+      border-spacing: 0;
+      user-select: none;
+    }
+
+    .xy-grid th, .xy-grid td {
+      border: 1px solid rgba(255,255,255,0.06);
+      border-top: none;
+      border-left: none;
+    }
+
+    .xy-grid th {
+      position: sticky;
+      background: #1a1a2e;
+      z-index: 2;
+      padding: 0;
+      border-color: #222240;
+    }
+
+    .xy-grid th.corner-cell {
+      top: 0;
+      left: 0;
+      z-index: 3;
+      background: #1a1a2e;
+      box-shadow: 1px 1px 0 0 #1a1a2e;
+    }
+
+    /* Column index numbers (inputs/sources across the top) */
+    .xy-grid .index-row th.input-index {
+      top: 0;
+      min-width: 28px;
+      max-width: 28px;
+      font-size: 0.65rem;
+      font-weight: 400;
+      color: #666;
+      padding: 2px 0;
+      height: 20px;
+    }
+
+    /* Column label headers (inputs/sources, vertical text) */
+    .xy-grid th.input-header {
+      top: 20px;
+      min-width: 28px;
+      max-width: 28px;
+      height: 100px;
+    }
+
+    .xy-grid th.input-header .header-text {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      transform: rotate(180deg);
+      font-size: 0.7rem;
+      font-weight: 400;
+      color: #ccc;
+      padding: 4px 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-height: 95px;
+      display: block;
+    }
+
+    /* Row label headers (outputs/destinations, left side) */
+    .xy-grid th.output-header {
+      left: 52px;
+      white-space: nowrap;
+      padding-right: 6px;
+      max-width: 140px;
+      box-shadow: 1px 0 0 0 #1a1a2e;
+    }
+
+    .xy-grid th.output-header .header-text {
+      font-size: 0.7rem;
+      font-weight: 400;
+      color: #ccc;
+      padding: 4px 6px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: block;
+      max-width: 140px;
+    }
+
+    /* Router color coding in headers */
+    .xy-grid th.router-a .header-text { color: #7baaf7; }
+    .xy-grid th.router-b .header-text { color: #f0a060; }
+
+    /* Separator between router A and B sections */
+    .xy-grid th.input-separator,
+    .xy-grid td.input-separator {
+      border-left: 2px solid rgba(255,255,255,0.3) !important;
+    }
+    .xy-grid th.output-separator,
+    .xy-grid tr.output-separator td {
+      border-top: 2px solid rgba(255,255,255,0.3) !important;
+    }
+
+    .xy-grid td {
+      width: 28px; height: 28px;
+      min-width: 28px; max-width: 28px;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.1s;
+      position: relative;
+    }
+
+    .xy-grid td:hover { background: rgba(255,255,255,0.1); }
+
+    /* Same-router active crosspoint */
+    .xy-grid td.active {
+      background: rgba(46, 213, 115, 0.6);
+    }
+    .xy-grid td.active::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #2ed573;
+    }
+
+    /* Cross-router active crosspoint */
+    .xy-grid td.active-cross {
+      background: rgba(162, 115, 235, 0.5);
+    }
+    .xy-grid td.active-cross::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #a273eb;
+    }
+
+    /* Drag preview */
+    .xy-grid td.drag-preview {
+      background: rgba(74, 105, 189, 0.4);
+    }
+    .xy-grid td.drag-preview::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: rgba(74, 105, 189, 0.8);
+    }
+
+    /* Locked crosspoints */
+    .xy-grid td.locked {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+    .xy-grid td.locked:hover {
+      background: transparent;
+    }
+
+    /* Highlight row/col */
+    .xy-grid td.highlight-row,
+    .xy-grid td.highlight-col {
+      background: rgba(255,255,255,0.04);
+    }
+
+    /* Lock cell (per output row) */
+    .xy-grid td.lock-cell {
+      position: sticky;
+      left: 0;
+      background: #1a1a2e;
+      width: 28px;
+      min-width: 28px;
+      max-width: 28px;
+      text-align: center;
+      padding: 0;
+      z-index: 1;
+      border-color: #222240;
+    }
+    .xy-grid td.lock-cell .xy-lock-btn {
+      width: 22px;
+      height: 22px;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      background: transparent;
+      cursor: pointer;
+      padding: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 2px auto;
+      transition: all 0.2s;
+      color: #555;
+    }
+    .xy-grid td.lock-cell .xy-lock-btn svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+    .xy-grid td.lock-cell .xy-lock-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #aaa;
+    }
+    .xy-grid td.lock-cell .xy-lock-btn.locked {
+      background: rgba(255, 107, 107, 0.2);
+      border-color: #ff6b6b;
+      color: #ff6b6b;
+    }
+    .xy-grid td.lock-cell .xy-lock-btn.locked-other {
+      background: rgba(255, 165, 0, 0.2);
+      border-color: orange;
+      color: orange;
+      cursor: not-allowed;
+    }
+
+    /* Row index (output index number) */
+    .xy-grid td.output-index {
+      position: sticky;
+      left: 28px;
+      background: #1a1a2e;
+      font-size: 0.65rem;
+      color: #666;
+      text-align: center;
+      padding: 0 4px;
+      min-width: 24px;
+      max-width: 24px;
+      z-index: 1;
+      border-color: #222240;
+    }
+
+    /* Minimap (in corner cell) */
+    .xy-grid th.corner-cell {
+      padding: 4px;
+      vertical-align: top;
+    }
+    .xy-minimap {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 2px;
+      cursor: pointer;
+      overflow: hidden;
+    }
+    .xy-minimap canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .xy-minimap-viewport {
+      position: absolute;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      background: rgba(255, 255, 255, 0.1);
+      pointer-events: none;
+      box-sizing: border-box;
+    }
+
+    /* Tie-line status bar */
+    .tieline-status-bar {
+      display: flex;
+      gap: 20px;
+      padding: 6px 12px;
+      background: rgba(0,0,0,0.3);
+      border-top: 1px solid rgba(255,255,255,0.1);
+      font-size: 0.8rem;
+      color: #aaa;
+      align-items: center;
+    }
+
+    .tieline-status-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tieline-status-count {
+      font-weight: 600;
+      color: #ccc;
+    }
+
+    .tieline-status-count.full { color: #ff4757; }
+
+    .btn-release-tl {
+      margin-left: auto;
+      padding: 3px 10px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      color: #aaa;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-release-tl:hover { background: rgba(255, 71, 87, 0.2); border-color: #ff4757; color: #ff4757; }
+
+    .tieline-status-detail {
+      font-size: 0.75rem;
+      color: #777;
+      max-width: 400px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Level selector */
+    .level-selector {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .level-selector label { font-size: 0.8rem; color: #888; }
+    .level-selector select {
+      padding: 4px 8px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 3px;
+      color: #fff;
+      font-size: 0.8rem;
+    }
+
+    /* ============ LABELS TAB ============ */
+    .labels-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .labels-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      background: rgba(0,0,0,0.2);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .labels-columns {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      overflow: hidden;
+    }
+
+    .label-column {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-right: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .label-column:last-child { border-right: none; }
+
+    .label-column-header {
+      padding: 10px 15px;
+      background: rgba(0,0,0,0.2);
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .label-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 0;
+    }
+
+    .label-item {
+      display: flex;
+      align-items: center;
+      padding: 4px 12px;
+      gap: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .label-item:hover { background: rgba(255,255,255,0.05); }
+
+    .label-item .label-index {
+      font-size: 0.75rem;
+      color: #666;
+      min-width: 30px;
+      text-align: right;
+    }
+
+    .label-item .label-router-tag {
+      font-size: 0.65rem;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-weight: 600;
+      min-width: 18px;
+      text-align: center;
+    }
+    .label-router-tag.tag-a { background: rgba(74,105,189,0.3); color: #7baaf7; }
+    .label-router-tag.tag-b { background: rgba(225,112,85,0.3); color: #f0a060; }
+
+    .label-item input {
+      flex: 1;
+      padding: 4px 8px;
+      background: rgba(0,0,0,0.2);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 3px;
+      color: #e0e0e0;
+      font-size: 0.85rem;
+    }
+    .label-item input:focus {
+      outline: none;
+      border-color: #4a69bd;
+      background: rgba(0,0,0,0.4);
+    }
+
+    .label-item.selected { background: rgba(74,105,189,0.2); }
+
+    /* ============ SALVOS TAB ============ */
+    .salvos-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .salvos-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      background: rgba(0,0,0,0.2);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+
+    .salvos-toolbar input {
+      padding: 6px 10px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 4px;
+      color: #fff;
+      font-size: 0.85rem;
+      width: 200px;
+    }
+
+    .salvos-toolbar .separator {
+      width: 1px;
+      height: 24px;
+      background: rgba(255,255,255,0.2);
+      margin: 0 5px;
+    }
+
+    .salvos-toolbar .selection-count {
+      font-size: 0.85rem;
+      color: #74b9ff;
+    }
+
+    .salvos-columns {
+      display: flex;
+      gap: 20px;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      padding: 10px;
+    }
+
+    .salvos-destinations-column {
+      width: 300px;
+      min-width: 220px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .salvos-list-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .salvos-column-header {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #4a69bd;
+      margin: 0 0 10px 0;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(74,105,189,0.3);
+    }
+
+    .salvos-destinations-toolbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .salvos-destinations-toolbar .btn-small {
+      padding: 4px 10px;
+      font-size: 0.75rem;
+    }
+
+    .salvos-destinations-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .salvo-dest-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 10px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 4px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s;
+    }
+    .salvo-dest-row:hover { background: rgba(255,255,255,0.08); }
+    .salvo-dest-row.selected { background: rgba(74,105,189,0.3); }
+    .salvo-dest-row input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+    .salvo-dest-row .dest-number { width: 30px; font-size: 0.8rem; color: #666; text-align: right; }
+    .salvo-dest-row .dest-label { flex: 1; font-size: 0.85rem; color: #ff6b6b; }
+    .salvo-dest-row .dest-source { font-size: 0.8rem; color: #2ed573; }
+
+    .salvos-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .salvo-card {
+      background: rgba(0,0,0,0.2);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+
+    .salvo-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      cursor: pointer;
+    }
+    .salvo-card-header:hover { background: rgba(255,255,255,0.05); }
+
+    .salvo-card-name { font-weight: 500; font-size: 0.9rem; }
+    .salvo-card-info { font-size: 0.75rem; color: #888; }
+
+    .salvo-card-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .salvo-card-body {
+      display: none;
+      padding: 10px 14px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      font-size: 0.8rem;
+    }
+    .salvo-card.expanded .salvo-card-body { display: block; }
+
+    .salvo-route-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 3px 0;
+      color: #aaa;
+    }
+    .salvo-route-row .route-output { color: #e0e0e0; }
+    .salvo-route-row .route-arrow { color: #666; margin: 0 6px; }
+    .salvo-route-row .route-input { color: #e0e0e0; }
+    .salvo-route-row .route-cross { color: #a273eb; font-size: 0.7rem; margin-left: 6px; }
+
+    .salvo-empty {
+      padding: 30px;
+      text-align: center;
+      color: #666;
+    }
+
+
+    /* Import resolution dialog */
+    .import-dialog-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .import-dialog-overlay.visible { display: flex; }
+
+    .import-dialog {
+      background: #2a2a4a;
+      border-radius: 10px;
+      padding: 24px;
+      min-width: 400px;
+      max-width: 500px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .import-dialog h3 { margin-bottom: 10px; }
+    .import-dialog p { margin-bottom: 15px; font-size: 0.9rem; color: #aaa; }
+    .import-dialog .dup-list {
+      margin-bottom: 15px;
+      padding: 8px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 4px;
+      font-size: 0.85rem;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    .import-dialog .dialog-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* Context menu */
+    .context-menu {
+      display: none;
+      position: fixed;
+      background: #2a2a4a;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 6px;
+      padding: 4px 0;
+      z-index: 200;
+      min-width: 180px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    .context-menu.visible { display: block; }
+
+    .context-menu-item {
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      color: #ddd;
+    }
+    .context-menu-item:hover:not(.disabled) { background: rgba(74,105,189,0.3); }
+    .context-menu-item.disabled { color: #555; cursor: default; }
+    .context-menu-separator {
+      height: 1px;
+      background: rgba(255,255,255,0.1);
+      margin: 4px 0;
+    }
+
+    /* Toast */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 300;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toast {
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      color: #fff;
+      max-width: 400px;
+      animation: slideIn 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .toast.success { background: #2ed573; color: #1a1a2e; }
+    .toast.error { background: #e74c3c; }
+    .toast.warning { background: #ffa502; color: #1a1a2e; }
+    .toast.info { background: #4a69bd; }
+
+    @keyframes slideIn {
+      from { transform: translateX(100px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">
+        <h1>Tie-Line Manager</h1>
+      </div>
+      <div class="header-status">
+        <div class="router-status" id="statusA">
+          <span class="status-dot" id="statusDotA"></span>
+          <span id="statusTextA">Router A: Disconnected</span>
+        </div>
+        <div class="router-status" id="statusB">
+          <span class="status-dot" id="statusDotB"></span>
+          <span id="statusTextB">Router B: Disconnected</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="setup">Setup</button>
+      <button class="tab-btn" data-tab="xy">XY</button>
+      <button class="tab-btn" data-tab="labels">Labels</button>
+      <button class="tab-btn" data-tab="salvos">Salvos</button>
+    </div>
+
+    <!-- SETUP TAB -->
+    <div class="tab-content active" id="tab-setup">
+      <div class="setup-content">
+        <!-- Router connection panels -->
+        <div class="setup-grid">
+          <!-- Router A -->
+          <div class="router-panel">
+            <h3><span class="router-badge badge-a">A</span> Router A</h3>
+            <div class="config-group">
+              <label>Protocol</label>
+              <select id="protocolA">
+                <option value="videohub">Blackmagic VideoHub</option>
+                <option value="swp08">SW-P-08</option>
+                <option value="gvnative">GV Native</option>
+              </select>
+            </div>
+            <div class="config-group">
+              <label>Host</label>
+              <input type="text" id="hostA" value="127.0.0.1" placeholder="IP address">
+            </div>
+            <div class="config-group">
+              <label>Port</label>
+              <input type="number" id="portA" value="9990" placeholder="Port">
+            </div>
+            <div class="config-group" id="levelsGroupA" style="display:none">
+              <label>Levels</label>
+              <input type="number" id="levelsA" value="1" min="1" max="16">
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="connectA">Connect</button>
+              <button class="btn btn-danger" id="disconnectA" disabled>Disconnect</button>
+            </div>
+            <div class="connection-status disconnected" id="connStatusA">Disconnected</div>
+          </div>
+
+          <!-- Router B -->
+          <div class="router-panel">
+            <h3><span class="router-badge badge-b">B</span> Router B</h3>
+            <div class="config-group">
+              <label>Protocol</label>
+              <select id="protocolB">
+                <option value="videohub">Blackmagic VideoHub</option>
+                <option value="swp08">SW-P-08</option>
+                <option value="gvnative">GV Native</option>
+              </select>
+            </div>
+            <div class="config-group">
+              <label>Host</label>
+              <input type="text" id="hostB" value="127.0.0.1" placeholder="IP address">
+            </div>
+            <div class="config-group">
+              <label>Port</label>
+              <input type="number" id="portB" value="9991" placeholder="Port">
+            </div>
+            <div class="config-group" id="levelsGroupB" style="display:none">
+              <label>Levels</label>
+              <input type="number" id="levelsB" value="1" min="1" max="16">
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="connectB">Connect</button>
+              <button class="btn btn-danger" id="disconnectB" disabled>Disconnect</button>
+            </div>
+            <div class="connection-status disconnected" id="connStatusB">Disconnected</div>
+          </div>
+        </div>
+
+        <!-- Tie-line configuration -->
+        <div class="setup-grid">
+          <!-- A to B -->
+          <div class="tieline-section">
+            <h3>
+              <span>A &rarr; B Tie-Lines</span>
+              <button class="btn btn-small btn-primary" id="addTieLineAtoB">+ Add</button>
+            </h3>
+            <table class="tieline-table">
+              <thead>
+                <tr><th>#</th><th>Router A Output</th><th>Router B Input</th><th></th></tr>
+              </thead>
+              <tbody id="tieLineAtoBBody"></tbody>
+            </table>
+            <div id="noAtoBMsg" style="font-size:0.8rem; color:#666; padding:8px;">No tie-lines configured</div>
+          </div>
+
+          <!-- B to A -->
+          <div class="tieline-section">
+            <h3>
+              <span>B &rarr; A Tie-Lines</span>
+              <button class="btn btn-small btn-primary" id="addTieLineBtoA">+ Add</button>
+            </h3>
+            <table class="tieline-table">
+              <thead>
+                <tr><th>#</th><th>Router B Output</th><th>Router A Input</th><th></th></tr>
+              </thead>
+              <tbody id="tieLineBtoABody"></tbody>
+            </table>
+            <div id="noBtoAMsg" style="font-size:0.8rem; color:#666; padding:8px;">No tie-lines configured</div>
+          </div>
+        </div>
+
+        <!-- Settings -->
+        <div class="settings-section">
+          <h3>Settings</h3>
+          <div class="checkbox-group">
+            <input type="checkbox" id="autoConnect">
+            <label for="autoConnect">Auto-connect on launch</label>
+          </div>
+          <div class="checkbox-group">
+            <input type="checkbox" id="autoReconnect" checked>
+            <label for="autoReconnect">Auto-reconnect on disconnect</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- XY TAB -->
+    <div class="tab-content" id="tab-xy">
+      <div class="xy-content">
+        <div class="xy-toolbar">
+          <div class="level-selector" id="levelSelectorContainer" style="display:none">
+            <label>Level:</label>
+            <select id="levelSelect"></select>
+          </div>
+          <div class="toolbar-label">Salvos:</div>
+          <div class="salvo-quick-buttons" id="salvoQuickButtons">
+            <span style="font-size:0.75rem; color:#666">No salvos</span>
+          </div>
+        </div>
+        <div class="xy-grid-container" id="xyGridContainer">
+          <div class="xy-grid-wrapper">
+            <table class="xy-grid" id="xyGrid"></table>
+          </div>
+        </div>
+        <div class="tieline-status-bar" id="tielineStatusBar">
+          <div class="tieline-status-item">
+            <span>A&rarr;B:</span>
+            <span class="tieline-status-count" id="atobCount">0/0</span>
+            <span class="tieline-status-detail" id="atobDetail"></span>
+          </div>
+          <div class="tieline-status-item">
+            <span>B&rarr;A:</span>
+            <span class="tieline-status-count" id="btoaCount">0/0</span>
+            <span class="tieline-status-detail" id="btoaDetail"></span>
+          </div>
+          <button class="btn-release-tl" id="releaseAllTieLines" title="Release all tie-lines back to free state">Release All</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LABELS TAB -->
+    <div class="tab-content" id="tab-labels">
+      <div class="labels-content">
+        <div class="labels-toolbar">
+          <button class="btn btn-small btn-primary" id="labelsImportBtn">Import CSV</button>
+          <button class="btn btn-small btn-primary" id="labelsExportBtn">Export CSV</button>
+        </div>
+        <div class="labels-columns">
+          <div class="label-column">
+            <div class="label-column-header">Inputs (Sources)</div>
+            <div class="label-list" id="inputLabelList"></div>
+          </div>
+          <div class="label-column">
+            <div class="label-column-header">Outputs (Destinations)</div>
+            <div class="label-list" id="outputLabelList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SALVOS TAB -->
+    <div class="tab-content" id="tab-salvos">
+      <div class="salvos-content">
+        <div class="salvos-toolbar">
+          <input type="text" id="salvoNameInput" placeholder="Salvo name...">
+          <button class="btn btn-small btn-success" id="captureAllBtn">Capture All</button>
+          <button class="btn btn-small btn-primary" id="captureSelectedBtn" disabled>Capture Selected</button>
+          <div class="separator"></div>
+          <span class="selection-count" id="salvoSelectionCount"></span>
+          <button class="btn btn-small" id="clearSelectionBtn" style="display:none;background:rgba(255,255,255,0.1);color:#ccc;">Clear</button>
+          <div style="flex:1"></div>
+          <button class="btn btn-small btn-primary" id="exportSalvosBtn">Export CSV</button>
+          <button class="btn btn-small btn-primary" id="importSalvosBtn">Import CSV</button>
+        </div>
+        <div class="salvos-columns">
+          <div class="salvos-destinations-column">
+            <h3 class="salvos-column-header">Select Destinations</h3>
+            <div class="salvos-destinations-toolbar">
+              <button class="btn btn-small" id="selectAllDestsBtn" style="background:rgba(255,255,255,0.1);color:#ccc;">Select All</button>
+              <button class="btn btn-small" id="selectNoneDestsBtn" style="background:rgba(255,255,255,0.1);color:#ccc;">Select None</button>
+            </div>
+            <div class="salvos-destinations-list" id="salvosDestinationsList"></div>
+          </div>
+          <div class="salvos-list-column">
+            <h3 class="salvos-column-header">Saved Salvos</h3>
+            <div class="salvos-list" id="salvosList">
+              <div class="salvo-empty" id="salvosEmpty">No salvos captured yet</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Context Menu -->
+  <div class="context-menu" id="contextMenu"></div>
+
+
+  <!-- Import Resolution Dialog -->
+  <div class="import-dialog-overlay" id="importDialogOverlay">
+    <div class="import-dialog" id="importDialog">
+      <h3>Duplicate Salvos Found</h3>
+      <p>The following salvos already exist:</p>
+      <div class="dup-list" id="importDupList"></div>
+      <div class="dialog-buttons">
+        <button class="btn btn-small" id="importCancelBtn" style="background:rgba(255,255,255,0.1);color:#ccc;">Cancel</button>
+        <button class="btn btn-small btn-primary" id="importSkipBtn">Skip</button>
+        <button class="btn btn-small btn-primary" id="importRenameBtn">Rename</button>
+        <button class="btn btn-small btn-danger" id="importOverwriteBtn">Overwrite</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    // ===========================================
+    // STATE
+    // ===========================================
+    let virtualState = { inputs: 0, outputs: 0, routing: {}, inputLabels: {}, outputLabels: {}, inputRouterMap: {}, outputRouterMap: {} };
+    let tieLineState = { aToB: [], bToA: [] };
+    let tieLineConfig = { aToB: [], bToA: [] };
+    let salvos = [];
+    let selectedOutputsForCapture = new Set();
+    let settings = {};
+    let routerAConnected = false;
+    let routerBConnected = false;
+    let routerAState = null;
+    let routerBState = null;
+    let activeLevel = 0;
+    let activeTab = 'setup';
+
+    // XY state
+    let dragStart = null;
+    let isDragging = false;
+
+    // Label state
+    let selectedLabelItems = new Set();
+    let lastSelectedLabel = null; // { type, index } anchor for shift-select
+    let copiedLabels = [];
+
+    // Import resolution pending data
+    let pendingImportData = null;
+
+    const api = window.tieLineManager;
+
+    // ===========================================
+    // INITIALIZATION
+    // ===========================================
+    async function init() {
+      settings = await api.getSettings();
+
+      // Apply saved settings to form
+      if (settings.routerA) {
+        document.getElementById('protocolA').value = settings.routerA.protocol || 'videohub';
+        document.getElementById('hostA').value = settings.routerA.host || '127.0.0.1';
+        document.getElementById('portA').value = settings.routerA.port || 9990;
+        if (settings.routerA.levels > 1) document.getElementById('levelsA').value = settings.routerA.levels;
+      }
+      if (settings.routerB) {
+        document.getElementById('protocolB').value = settings.routerB.protocol || 'videohub';
+        document.getElementById('hostB').value = settings.routerB.host || '127.0.0.1';
+        document.getElementById('portB').value = settings.routerB.port || 9991;
+        if (settings.routerB.levels > 1) document.getElementById('levelsB').value = settings.routerB.levels;
+      }
+
+      document.getElementById('autoConnect').checked = settings.autoConnect || false;
+      document.getElementById('autoReconnect').checked = settings.autoReconnect !== false;
+
+      updateProtocolUI('A');
+      updateProtocolUI('B');
+
+      // Load tie-line config
+      tieLineConfig = await api.getTieLineConfig();
+      renderTieLineConfig();
+
+      // Load salvos
+      salvos = await api.getSalvos();
+
+      // Switch to saved tab
+      if (settings.activeTab) switchTab(settings.activeTab);
+
+      // Set up event listeners
+      setupEventListeners();
+      setupIPCListeners();
+
+      // Auto-connect
+      if (settings.autoConnect) {
+        setTimeout(() => {
+          if (settings.routerA?.host) connectRouter('A');
+          if (settings.routerB?.host) connectRouter('B');
+        }, 500);
+      }
+    }
+
+    // ===========================================
+    // TABS
+    // ===========================================
+    function switchTab(tabId) {
+      activeTab = tabId;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === `tab-${tabId}`));
+      api.saveSettings({ activeTab: tabId });
+
+      if (tabId === 'xy') {
+        setTimeout(() => { renderXYGrid(); updateMinimap(); }, 50);
+      } else if (tabId === 'labels') {
+        renderLabels();
+      } else if (tabId === 'salvos') {
+        renderSalvos();
+        renderSalvoDestinations();
+      }
+    }
+
+    // ===========================================
+    // CONNECTION
+    // ===========================================
+    async function connectRouter(routerId) {
+      const prefix = routerId === 'A' ? '' : 'B';
+      const suffix = routerId;
+      const config = {
+        protocol: document.getElementById(`protocol${suffix}`).value,
+        host: document.getElementById(`host${suffix}`).value,
+        port: parseInt(document.getElementById(`port${suffix}`).value) || 9990,
+        levels: parseInt(document.getElementById(`levels${suffix}`).value) || 1
+      };
+
+      setConnectionStatus(routerId, 'connecting', 'Connecting...');
+      const result = await api.connectRouter(routerId, config);
+      if (!result.success) {
+        setConnectionStatus(routerId, 'disconnected', `Failed: ${result.error}`);
+        showToast(`Router ${routerId}: ${result.error}`, 'error');
+      }
+    }
+
+    async function disconnectRouter(routerId) {
+      await api.disconnectRouter(routerId);
+      setConnectionStatus(routerId, 'disconnected', 'Disconnected');
+    }
+
+    function setConnectionStatus(routerId, status, text) {
+      const dot = document.getElementById(`statusDot${routerId}`);
+      const statusText = document.getElementById(`statusText${routerId}`);
+      const connStatus = document.getElementById(`connStatus${routerId}`);
+      const connectBtn = document.getElementById(`connect${routerId}`);
+      const disconnectBtn = document.getElementById(`disconnect${routerId}`);
+
+      dot.className = 'status-dot' + (status === 'connected' ? ' active' : status === 'connecting' ? ' connecting' : '');
+      statusText.textContent = `Router ${routerId}: ${status === 'connected' ? 'Connected' : status === 'connecting' ? 'Connecting' : 'Disconnected'}`;
+
+      connStatus.className = 'connection-status ' + (status === 'connected' ? 'connected' : status === 'connecting' ? 'connecting' : 'disconnected');
+      connStatus.textContent = text;
+
+      connectBtn.disabled = status === 'connected' || status === 'connecting';
+      disconnectBtn.disabled = status !== 'connected';
+
+      if (routerId === 'A') routerAConnected = status === 'connected';
+      else routerBConnected = status === 'connected';
+    }
+
+    function updateProtocolUI(routerId) {
+      const protocol = document.getElementById(`protocol${routerId}`).value;
+      const levelsGroup = document.getElementById(`levelsGroup${routerId}`);
+      levelsGroup.style.display = protocol !== 'videohub' ? 'block' : 'none';
+
+      // Update default port
+      const portInput = document.getElementById(`port${routerId}`);
+      if (protocol === 'videohub' && portInput.value === '9990') { /* keep default */ }
+      else if (protocol === 'swp08' && (portInput.value === '9990' || portInput.value === '12345')) portInput.value = '12345';
+      else if (protocol === 'gvnative' && (portInput.value === '9990' || portInput.value === '12345')) portInput.value = '12345';
+    }
+
+    // ===========================================
+    // TIE-LINE CONFIGURATION UI
+    // ===========================================
+    function renderTieLineConfig() {
+      renderTieLineTable('aToB', tieLineConfig.aToB || [], 'tieLineAtoBBody', 'noAtoBMsg', 'routerAOutput', 'routerBInput', 'A Output', 'B Input');
+      renderTieLineTable('bToA', tieLineConfig.bToA || [], 'tieLineBtoABody', 'noBtoAMsg', 'routerBOutput', 'routerAInput', 'B Output', 'A Input');
+    }
+
+    function renderTieLineTable(direction, lines, tbodyId, noMsgId, outKey, inKey, outLabel, inLabel) {
+      const tbody = document.getElementById(tbodyId);
+      const noMsg = document.getElementById(noMsgId);
+
+      tbody.innerHTML = '';
+      noMsg.style.display = lines.length === 0 ? 'block' : 'none';
+
+      lines.forEach((tl, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${i + 1}</td>
+          <td>${outLabel} ${(tl[outKey] || 0) + 1}</td>
+          <td>${inLabel} ${(tl[inKey] || 0) + 1}</td>
+          <td><button class="remove-btn" data-dir="${direction}" data-idx="${i}" title="Remove">&times;</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function addTieLine(direction) {
+      const stateA = routerAConnected ? await api.getRouterState('A') : null;
+      const stateB = routerBConnected ? await api.getRouterState('B') : null;
+
+      const maxAOutputs = stateA ? stateA.outputs : 72;
+      const maxBOutputs = stateB ? stateB.outputs : 72;
+      const maxAInputs = stateA ? stateA.inputs : 72;
+      const maxBInputs = stateB ? stateB.inputs : 72;
+
+      let outCount, inCount, outKey, inKey, outLabel, inLabel;
+      if (direction === 'aToB') {
+        outCount = maxAOutputs; inCount = maxBInputs;
+        outKey = 'routerAOutput'; inKey = 'routerBInput';
+        outLabel = 'A Output'; inLabel = 'B Input';
+      } else {
+        outCount = maxBOutputs; inCount = maxAInputs;
+        outKey = 'routerBOutput'; inKey = 'routerAInput';
+        outLabel = 'B Output'; inLabel = 'A Input';
+      }
+
+      const usedOuts = new Set((tieLineConfig[direction] || []).map(tl => tl[outKey]));
+      const usedIns = new Set((tieLineConfig[direction] || []).map(tl => tl[inKey]));
+
+      // Show inline add row with dropdowns
+      const tbodyId = direction === 'aToB' ? 'tieLineAtoBBody' : 'tieLineBtoABody';
+      const tbody = document.getElementById(tbodyId);
+
+      // Remove any existing add row
+      const existingAdd = tbody.querySelector('.tieline-add-row');
+      if (existingAdd) { existingAdd.remove(); return; }
+
+      const tr = document.createElement('tr');
+      tr.className = 'tieline-add-row';
+
+      // Build output port select
+      let outOptions = '';
+      for (let p = 0; p < outCount; p++) {
+        const used = usedOuts.has(p);
+        outOptions += `<option value="${p}"${used ? ' disabled' : ''}>${outLabel} ${p + 1}${used ? ' (used)' : ''}</option>`;
+      }
+      // Pre-select first available
+      let firstAvailOut = 0;
+      while (usedOuts.has(firstAvailOut) && firstAvailOut < outCount) firstAvailOut++;
+
+      // Build input port select
+      let inOptions = '';
+      for (let p = 0; p < inCount; p++) {
+        const used = usedIns.has(p);
+        inOptions += `<option value="${p}"${used ? ' disabled' : ''}>${inLabel} ${p + 1}${used ? ' (used)' : ''}</option>`;
+      }
+      let firstAvailIn = 0;
+      while (usedIns.has(firstAvailIn) && firstAvailIn < inCount) firstAvailIn++;
+
+      tr.innerHTML = `
+        <td></td>
+        <td><select class="tieline-port-select" id="tlAddOut_${direction}">${outOptions}</select></td>
+        <td><select class="tieline-port-select" id="tlAddIn_${direction}">${inOptions}</select></td>
+        <td>
+          <button class="btn btn-small btn-success tieline-confirm-btn" id="tlConfirm_${direction}" title="Confirm">&#10003;</button>
+          <button class="btn btn-small btn-danger tieline-cancel-btn" id="tlCancel_${direction}" title="Cancel">&times;</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+
+      // Set default selections
+      const outSelect = document.getElementById(`tlAddOut_${direction}`);
+      const inSelect = document.getElementById(`tlAddIn_${direction}`);
+      if (firstAvailOut < outCount) outSelect.value = firstAvailOut;
+      if (firstAvailIn < inCount) inSelect.value = firstAvailIn;
+
+      // Confirm button
+      document.getElementById(`tlConfirm_${direction}`).addEventListener('click', async () => {
+        const outPort = parseInt(outSelect.value);
+        const inPort = parseInt(inSelect.value);
+        const mapping = { [outKey]: outPort, [inKey]: inPort };
+        const result = await api.addTieLine(direction, mapping);
+        if (result.success) {
+          tieLineConfig = result.tieLines;
+          renderTieLineConfig();
+          showToast(`Added ${direction === 'aToB' ? 'A\u2192B' : 'B\u2192A'} tie-line: ${outLabel} ${outPort + 1} \u2192 ${inLabel} ${inPort + 1}`, 'success');
+        }
+      });
+
+      // Cancel button
+      document.getElementById(`tlCancel_${direction}`).addEventListener('click', () => {
+        tr.remove();
+      });
+    }
+
+    async function removeTieLine(direction, index) {
+      const result = await api.removeTieLine(direction, index);
+      if (result.success) {
+        tieLineConfig = result.tieLines;
+        renderTieLineConfig();
+        showToast('Tie-line removed', 'info');
+      }
+    }
+
+    // Lock icons
+    const LOCK_ICON_LOCKED = '<svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>';
+    const LOCK_ICON_UNLOCKED = '<svg viewBox="0 0 24 24"><path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10z"/></svg>';
+
+    // ===========================================
+    // XY GRID
+    // ===========================================
+    function renderXYGrid() {
+      const grid = document.getElementById('xyGrid');
+      if (!virtualState || virtualState.outputs === 0 || virtualState.inputs === 0) {
+        grid.innerHTML = '<tr><td style="padding:40px; color:#666; text-align:center;">Connect both routers to see routing grid</td></tr>';
+        return;
+      }
+
+      const { inputs, outputs, routing, inputLabels, outputLabels, outputLocks, inputRouterMap, outputRouterMap,
+              inputPhysicalIndices, outputPhysicalIndices,
+              routerAInputCount, routerBInputCount, routerAOutputCount, routerBOutputCount } = virtualState;
+
+      // Header row 1: Input index numbers with minimap in corner (rowspan=2, colspan=3: lock + index + label)
+      let html = '<thead><tr class="index-row"><th class="corner-cell" rowspan="2" colspan="3"><div class="xy-minimap" id="xyMinimap"><canvas id="xyMinimapCanvas"></canvas><div class="xy-minimap-viewport" id="xyMinimapViewport"></div></div></th>';
+      for (let i = 0; i < inputs; i++) {
+        const isSep = (i === routerAInputCount && routerBInputCount > 0);
+        const physIdx = inputPhysicalIndices?.[i] || (i + 1);
+        html += `<th class="input-index${isSep ? ' input-separator' : ''}">${physIdx}</th>`;
+      }
+      html += '</tr>';
+
+      // Header row 2: Input label headers (vertical text)
+      html += '<tr>';
+      for (let i = 0; i < inputs; i++) {
+        const router = inputRouterMap[i] || 'A';
+        const isSep = (i === routerAInputCount && routerBInputCount > 0);
+        const label = inputLabels[i] || `Input ${i + 1}`;
+        html += `<th class="input-header router-${router.toLowerCase()}${isSep ? ' input-separator' : ''}">
+          <span class="header-text" title="${label}">${label}</span></th>`;
+      }
+      html += '</tr></thead><tbody>';
+
+      // Body rows: one per output (lock + index + label + crosspoints)
+      for (let o = 0; o < outputs; o++) {
+        const router = outputRouterMap[o] || 'A';
+        const isSep = (o === routerAOutputCount && routerBOutputCount > 0);
+        const label = outputLabels[o] || `Output ${o + 1}`;
+
+        const lockState = outputLocks?.[o] || 'U';
+        const isLocked = lockState === 'O' || lockState === 'L';
+        const isLockedByOther = lockState === 'L';
+        const lockBtnClass = isLocked ? (isLockedByOther ? 'locked-other' : 'locked') : '';
+        const lockIcon = isLocked ? LOCK_ICON_LOCKED : LOCK_ICON_UNLOCKED;
+        const lockTitle = isLockedByOther ? 'Locked by another client (Ctrl+click to unlock)' : (isLocked ? 'Click to unlock' : 'Click to lock');
+
+        html += `<tr class="${isSep ? 'output-separator' : ''}">`;
+
+        // Lock cell
+        html += `<td class="lock-cell${isSep ? ' output-separator' : ''}"><button class="xy-lock-btn ${lockBtnClass}" data-output="${o}" title="${lockTitle}">${lockIcon}</button></td>`;
+
+        // Row index (physical port number)
+        const physOutIdx = outputPhysicalIndices?.[o] || (o + 1);
+        html += `<td class="output-index${isSep ? ' output-separator' : ''}">${physOutIdx}</td>`;
+
+        // Output label header
+        html += `<th class="output-header router-${router.toLowerCase()}${isSep ? ' output-separator' : ''}">
+            <span class="header-text" title="${label}">${label}</span></th>`;
+
+        for (let i = 0; i < inputs; i++) {
+          const oRouter = outputRouterMap[o] || 'A';
+          const iRouter = inputRouterMap[i] || 'A';
+          const isActive = routing[o] === i;
+          const isCross = isActive && oRouter !== iRouter;
+          const isInSep = (i === routerAInputCount && routerBInputCount > 0);
+
+          let classes = '';
+          if (isActive) classes += isCross ? ' active-cross' : ' active';
+          if (isInSep) classes += ' input-separator';
+          if (isLocked) classes += ' locked';
+
+          html += `<td class="${classes.trim()}" data-output="${o}" data-input="${i}"></td>`;
+        }
+        html += '</tr>';
+      }
+
+      html += '</tbody>';
+      grid.innerHTML = html;
+
+      // Lock button event listeners
+      grid.querySelectorAll('.xy-lock-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const output = parseInt(e.currentTarget.dataset.output);
+          const currentLock = virtualState.outputLocks?.[output] || 'U';
+          if (currentLock === 'L') {
+            if (e.ctrlKey || e.metaKey) {
+              await api.setVirtualLock(output, 'F');
+            }
+            return;
+          }
+          const newLock = currentLock === 'O' ? 'U' : 'O';
+          await api.setVirtualLock(output, newLock);
+        });
+      });
+
+      // Update salvo quick buttons
+      renderSalvoQuickButtons();
+
+      // Update tie-line status
+      updateTieLineStatusBar();
+
+      // Update minimap
+      setTimeout(updateMinimap, 50);
+    }
+
+    // XY grid click handler
+    async function handleCellClick(output, input) {
+      // Check if output is locked
+      const lockState = virtualState?.outputLocks?.[output] || 'U';
+      if (lockState === 'O' || lockState === 'L') {
+        showToast('Output is locked', 'error');
+        return;
+      }
+      const result = await api.setVirtualRoute(output, input, activeLevel);
+      if (!result.success) {
+        showToast(result.error, 'error');
+      }
+    }
+
+    // Drag-to-route helpers
+    function clearDragPreview() {
+      document.querySelectorAll('.xy-grid td.drag-preview').forEach(td => td.classList.remove('drag-preview'));
+    }
+
+    function updateDragPreview(start, end) {
+      clearDragPreview();
+      if (!start || !end) return;
+      // Preview routes from start to end (diagonal/multi-output drag)
+      const oStart = start.output, oEnd = end.output;
+      const iStart = start.input, iEnd = end.input;
+      const oStep = oEnd >= oStart ? 1 : -1;
+      const iStep = iEnd >= iStart ? 1 : -1;
+      const oCount = Math.abs(oEnd - oStart) + 1;
+      const iCount = Math.abs(iEnd - iStart) + 1;
+      const routeCount = Math.max(oCount, iCount);
+      for (let r = 0; r < routeCount; r++) {
+        const o = oStart + (r < oCount ? r * oStep : (oCount - 1) * oStep);
+        const i = iStart + (r < iCount ? r * iStep : (iCount - 1) * iStep);
+        const cell = document.querySelector(`.xy-grid td[data-output="${o}"][data-input="${i}"]`);
+        if (cell) cell.classList.add('drag-preview');
+      }
+    }
+
+    async function applyDragRoutes(start, end) {
+      const oStart = start.output, oEnd = end.output;
+      const iStart = start.input, iEnd = end.input;
+      const oStep = oEnd >= oStart ? 1 : -1;
+      const iStep = iEnd >= iStart ? 1 : -1;
+      const oCount = Math.abs(oEnd - oStart) + 1;
+      const iCount = Math.abs(iEnd - iStart) + 1;
+      const routeCount = Math.max(oCount, iCount);
+      for (let r = 0; r < routeCount; r++) {
+        const o = oStart + (r < oCount ? r * oStep : (oCount - 1) * oStep);
+        const i = iStart + (r < iCount ? r * iStep : (iCount - 1) * iStep);
+        await handleCellClick(o, i);
+      }
+    }
+
+    // ===========================================
+    // MINIMAP
+    // ===========================================
+    function updateMinimap() {
+      if (activeTab !== 'xy') return;
+
+      const minimap = document.getElementById('xyMinimap');
+      const canvas = document.getElementById('xyMinimapCanvas');
+      const viewport = document.getElementById('xyMinimapViewport');
+      if (!minimap || !canvas) return;
+      if (!virtualState || virtualState.outputs === 0 || virtualState.inputs === 0) return;
+
+      const { inputs, outputs, routing, routerAInputCount, routerAOutputCount, inputRouterMap, outputRouterMap } = virtualState;
+
+      const ctx = canvas.getContext('2d');
+      const rect = minimap.getBoundingClientRect();
+      const width = Math.floor(rect.width);
+      const height = Math.floor(rect.height);
+      if (width <= 0 || height <= 0) return;
+
+      canvas.width = width;
+      canvas.height = height;
+
+      ctx.clearRect(0, 0, width, height);
+
+      // Dot sizing: X = inputs (columns), Y = outputs (rows)
+      const dotSpacingX = width / inputs;
+      const dotSpacingY = height / outputs;
+      const dotSize = Math.max(1, Math.min(dotSpacingX, dotSpacingY) * 0.6);
+
+      // Draw separator lines between routers
+      if (routerAInputCount > 0 && routerAInputCount < inputs) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        ctx.beginPath();
+        ctx.moveTo(routerAInputCount * dotSpacingX, 0);
+        ctx.lineTo(routerAInputCount * dotSpacingX, height);
+        ctx.stroke();
+      }
+      if (routerAOutputCount > 0 && routerAOutputCount < outputs) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        ctx.beginPath();
+        ctx.moveTo(0, routerAOutputCount * dotSpacingY);
+        ctx.lineTo(width, routerAOutputCount * dotSpacingY);
+        ctx.stroke();
+      }
+
+      // Draw crosspoints: X = input (column), Y = output (row)
+      for (const [outStr, inp] of Object.entries(routing)) {
+        const out = parseInt(outStr);
+        const oRouter = outputRouterMap[out] || 'A';
+        const iRouter = inputRouterMap[inp] || 'A';
+        const isCross = oRouter !== iRouter;
+        ctx.fillStyle = isCross ? '#a273eb' : '#2ed573';
+        const x = (inp + 0.5) * dotSpacingX;
+        const y = (out + 0.5) * dotSpacingY;
+        ctx.beginPath();
+        ctx.arc(x, y, dotSize / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Update viewport indicator
+      if (viewport) {
+        const gridContainer = document.getElementById('xyGridContainer');
+        const grid = document.getElementById('xyGrid');
+        if (grid.offsetWidth > 0 && grid.offsetHeight > 0) {
+          // Calculate the crosspoint area (excluding headers)
+          const firstCell = grid.querySelector('td[data-output]');
+          if (firstCell) {
+            const gridRect = grid.getBoundingClientRect();
+            const cellRect = firstCell.getBoundingClientRect();
+            const headerWidth = cellRect.left - gridRect.left;
+            const headerHeight = cellRect.top - gridRect.top;
+            const crosspointWidth = grid.offsetWidth - headerWidth;
+            const crosspointHeight = grid.offsetHeight - headerHeight;
+
+            const scrollLeft = gridContainer.scrollLeft - headerWidth;
+            const scrollTop = gridContainer.scrollTop - headerHeight;
+            const visibleWidth = gridContainer.clientWidth - headerWidth;
+            const visibleHeight = gridContainer.clientHeight - headerHeight;
+
+            const vpLeft = Math.max(0, (scrollLeft / crosspointWidth) * width);
+            const vpTop = Math.max(0, (scrollTop / crosspointHeight) * height);
+            const vpWidth = Math.min((visibleWidth / crosspointWidth) * width, width - vpLeft);
+            const vpHeight = Math.min((visibleHeight / crosspointHeight) * height, height - vpTop);
+
+            viewport.style.left = vpLeft + 'px';
+            viewport.style.top = vpTop + 'px';
+            viewport.style.width = vpWidth + 'px';
+            viewport.style.height = vpHeight + 'px';
+
+            const showViewport = vpWidth < width * 0.95 || vpHeight < height * 0.95;
+            viewport.style.display = showViewport ? 'block' : 'none';
+          }
+        }
+      }
+    }
+
+    function handleMinimapClick(clientX, clientY) {
+      const minimap = document.getElementById('xyMinimap');
+      const gridContainer = document.getElementById('xyGridContainer');
+      const grid = document.getElementById('xyGrid');
+      if (!minimap || !grid) return;
+
+      const minimapRect = minimap.getBoundingClientRect();
+      const relX = (clientX - minimapRect.left) / minimapRect.width;
+      const relY = (clientY - minimapRect.top) / minimapRect.height;
+
+      const firstCell = grid.querySelector('td[data-output]');
+      if (!firstCell) return;
+      const gridRect = grid.getBoundingClientRect();
+      const cellRect = firstCell.getBoundingClientRect();
+      const headerWidth = cellRect.left - gridRect.left;
+      const headerHeight = cellRect.top - gridRect.top;
+      const crosspointWidth = grid.offsetWidth - headerWidth;
+      const crosspointHeight = grid.offsetHeight - headerHeight;
+
+      gridContainer.scrollLeft = headerWidth + relX * crosspointWidth - gridContainer.clientWidth / 2;
+      gridContainer.scrollTop = headerHeight + relY * crosspointHeight - gridContainer.clientHeight / 2;
+      updateMinimap();
+    }
+
+    // ===========================================
+    // TIE-LINE STATUS BAR
+    // ===========================================
+    function updateTieLineStatusBar() {
+      const atobTotal = tieLineState.aToB?.length || 0;
+      const atobInUse = (tieLineState.aToB || []).filter(tl => tl.status === 'in-use').length;
+      const btoaTotal = tieLineState.bToA?.length || 0;
+      const btoaInUse = (tieLineState.bToA || []).filter(tl => tl.status === 'in-use').length;
+
+      const atobCount = document.getElementById('atobCount');
+      const btoaCount = document.getElementById('btoaCount');
+
+      atobCount.textContent = `${atobInUse}/${atobTotal}`;
+      atobCount.classList.toggle('full', atobInUse === atobTotal && atobTotal > 0);
+
+      btoaCount.textContent = `${btoaInUse}/${btoaTotal}`;
+      btoaCount.classList.toggle('full', btoaInUse === btoaTotal && btoaTotal > 0);
+
+      // Detail text
+      const atobDetails = (tieLineState.aToB || [])
+        .filter(tl => tl.status === 'in-use')
+        .map(tl => `In ${(tl.sourceInput || 0) + 1} \u2192 ${tl.destinations.length} dest`)
+        .join(', ');
+      document.getElementById('atobDetail').textContent = atobDetails;
+
+      const btoaDetails = (tieLineState.bToA || [])
+        .filter(tl => tl.status === 'in-use')
+        .map(tl => `In ${(tl.sourceInput || 0) + 1} \u2192 ${tl.destinations.length} dest`)
+        .join(', ');
+      document.getElementById('btoaDetail').textContent = btoaDetails;
+    }
+
+    // ===========================================
+    // LABELS
+    // ===========================================
+    function renderLabels() {
+      renderLabelList('input', 'inputLabelList');
+      renderLabelList('output', 'outputLabelList');
+    }
+
+    function renderLabelList(type, containerId) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+
+      const count = type === 'input' ? virtualState.inputs : virtualState.outputs;
+      const labels = type === 'input' ? virtualState.inputLabels : virtualState.outputLabels;
+      const routerMap = type === 'input' ? virtualState.inputRouterMap : virtualState.outputRouterMap;
+
+      if (count === 0) {
+        container.innerHTML = '<div style="padding:20px; text-align:center; color:#666;">Connect routers to see labels</div>';
+        return;
+      }
+
+      for (let i = 0; i < count; i++) {
+        const router = routerMap[i] || 'A';
+        const label = labels[i] || `${type === 'input' ? 'Input' : 'Output'} ${i + 1}`;
+
+        const item = document.createElement('div');
+        item.className = 'label-item' + (selectedLabelItems.has(`${type}-${i}`) ? ' selected' : '');
+        item.dataset.type = type;
+        item.dataset.index = i;
+        item.innerHTML = `
+          <span class="label-index">${i + 1}</span>
+          <span class="label-router-tag tag-${router.toLowerCase()}">${router}</span>
+          <input type="text" value="${escapeHtml(label)}" data-type="${type}" data-index="${i}">
+        `;
+        container.appendChild(item);
+      }
+    }
+
+    async function handleLabelChange(type, index, newLabel) {
+      if (type === 'input') {
+        await api.setInputLabel(index, newLabel);
+      } else {
+        await api.setOutputLabel(index, newLabel);
+      }
+    }
+
+    // Label context menu
+    function showLabelContextMenu(e, type, index) {
+      e.preventDefault();
+      const menu = document.getElementById('contextMenu');
+      const selected = getSelectedIndicesForType(type);
+      const hasMultiSelect = selected.length >= 2;
+      const hasThreeOrMore = selected.length >= 3;
+      const items = [
+        { label: 'Copy', action: () => copyLabels(type) },
+        { label: 'Paste', action: () => pasteLabels(type, index) },
+        { separator: true },
+        { label: 'Fill and Increment', action: () => fillAndIncrement(type), disabled: !hasMultiSelect,
+          title: hasMultiSelect ? '' : 'Select 2+ labels first' },
+        { label: 'Fill and Offset', action: () => fillAndOffset(type), disabled: !hasThreeOrMore,
+          title: hasThreeOrMore ? '' : 'Select 3+ labels first (first 2 set the pattern)' },
+        { separator: true },
+        { label: 'Select All', action: () => selectAllLabels(type) },
+        { label: 'Clear Selection', action: () => { selectedLabelItems.clear(); renderLabels(); } }
+      ];
+
+      menu.innerHTML = '';
+      for (const item of items) {
+        if (item.separator) {
+          const sep = document.createElement('div');
+          sep.className = 'context-menu-separator';
+          menu.appendChild(sep);
+        } else {
+          const div = document.createElement('div');
+          div.className = 'context-menu-item' + (item.disabled ? ' disabled' : '');
+          div.textContent = item.label;
+          if (item.title) div.title = item.title;
+          if (!item.disabled) {
+            div.addEventListener('click', () => { menu.classList.remove('visible'); item.action(); });
+          }
+          menu.appendChild(div);
+        }
+      }
+
+      menu.style.left = e.clientX + 'px';
+      menu.style.top = e.clientY + 'px';
+      menu.classList.add('visible');
+    }
+
+    function copyLabels(type) {
+      const labels = type === 'input' ? virtualState.inputLabels : virtualState.outputLabels;
+      copiedLabels = [];
+      const sorted = Array.from(selectedLabelItems)
+        .filter(k => k.startsWith(type + '-'))
+        .map(k => parseInt(k.split('-')[1]))
+        .sort((a, b) => a - b);
+
+      if (sorted.length === 0) return;
+      for (const i of sorted) {
+        copiedLabels.push(labels[i] || '');
+      }
+      showToast(`Copied ${copiedLabels.length} labels`, 'info');
+    }
+
+    async function pasteLabels(type, startIndex) {
+      if (copiedLabels.length === 0) { showToast('Nothing to paste', 'warning'); return; }
+      const count = type === 'input' ? virtualState.inputs : virtualState.outputs;
+
+      for (let i = 0; i < copiedLabels.length && startIndex + i < count; i++) {
+        await handleLabelChange(type, startIndex + i, copiedLabels[i]);
+      }
+      showToast(`Pasted ${copiedLabels.length} labels`, 'success');
+    }
+
+    async function fillAndOffset(type) {
+      const indices = getSelectedIndicesForType(type);
+      if (indices.length < 3) {
+        showToast('Select 3 or more labels. First 2 define the offset pattern.', 'warning');
+        return;
+      }
+
+      const labels = type === 'input' ? virtualState.inputLabels : virtualState.outputLabels;
+      const label1 = labels[indices[0]] || '';
+      const label2 = labels[indices[1]] || '';
+
+      const generated = generateOffsetLabels(label1, label2, indices.length);
+      if (!generated) {
+        showToast('Could not detect a number pattern in the first two labels', 'warning');
+        return;
+      }
+
+      for (let i = 0; i < indices.length; i++) {
+        await handleLabelChange(type, indices[i], generated[i]);
+      }
+      showToast(`Filled ${indices.length} labels with offset pattern`, 'success');
+      selectedLabelItems.clear();
+      renderLabels();
+    }
+
+    function generateOffsetLabels(label1, label2, count) {
+      // Find the last number in each label
+      const match1 = label1.match(/(\d+)(?!.*\d)/);
+      const match2 = label2.match(/(\d+)(?!.*\d)/);
+      if (!match1 || !match2) return null;
+
+      const num1 = parseInt(match1[1], 10);
+      const num2 = parseInt(match2[1], 10);
+      const offset = num2 - num1;
+      if (offset === 0) return null;
+
+      const prefix = label1.substring(0, match1.index);
+      const suffix = label1.substring(match1.index + match1[1].length);
+      const padLen = match1[1].length;
+
+      const labels = [];
+      for (let i = 0; i < count; i++) {
+        const num = (num1 + offset * i).toString().padStart(padLen, '0');
+        labels.push(prefix + num + suffix);
+      }
+      return labels;
+    }
+
+    async function fillAndIncrement(type) {
+      const indices = getSelectedIndicesForType(type);
+      if (indices.length < 2) {
+        showToast('Select 2 or more labels first (Shift+Click or Cmd+Click)', 'warning');
+        return;
+      }
+
+      const labels = type === 'input' ? virtualState.inputLabels : virtualState.outputLabels;
+      const firstIndex = indices[0];
+      const firstLabel = labels[firstIndex] || (type === 'input' ? `Input ${firstIndex + 1}` : `Output ${firstIndex + 1}`);
+      const incremented = generateIncrementedLabels(firstLabel, indices.length);
+
+      for (let i = 0; i < indices.length; i++) {
+        await handleLabelChange(type, indices[i], incremented[i]);
+      }
+      showToast(`Filled ${indices.length} labels with increment from "${firstLabel}"`, 'success');
+      selectedLabelItems.clear();
+      renderLabels();
+    }
+
+    function getSelectedIndicesForType(type) {
+      return Array.from(selectedLabelItems)
+        .filter(k => k.startsWith(type + '-'))
+        .map(k => parseInt(k.split('-')[1]))
+        .sort((a, b) => a - b);
+    }
+
+    function generateIncrementedLabels(baseLabel, count) {
+      const labels = [baseLabel];
+
+      // 1. Trailing letter (e.g., "VTR A", "CAM B")
+      const letterMatch = baseLabel.match(/^(.+?)([A-Z])$/i);
+      if (letterMatch) {
+        const prefix = letterMatch[1];
+        const letter = letterMatch[2];
+        const isUpper = letter === letter.toUpperCase();
+        const startCode = letter.toUpperCase().charCodeAt(0);
+        for (let i = 1; i < count; i++) {
+          const code = ((startCode - 65 + i) % 26) + 65;
+          const ch = String.fromCharCode(code);
+          labels.push(prefix + (isUpper ? ch : ch.toLowerCase()));
+        }
+        return labels;
+      }
+
+      // 2. Letter with separator (e.g., "Deck-A", "VTR B ")
+      const letterSepMatch = baseLabel.match(/^(.+[^A-Za-z])([A-Z])(\s*)$/i);
+      if (letterSepMatch) {
+        const prefix = letterSepMatch[1];
+        const letter = letterSepMatch[2];
+        const suffix = letterSepMatch[3];
+        const isUpper = letter === letter.toUpperCase();
+        const startCode = letter.toUpperCase().charCodeAt(0);
+        for (let i = 1; i < count; i++) {
+          const code = ((startCode - 65 + i) % 26) + 65;
+          const ch = String.fromCharCode(code);
+          labels.push(prefix + (isUpper ? ch : ch.toLowerCase()) + suffix);
+        }
+        return labels;
+      }
+
+      // 3. Last number in the label (e.g., "Camera 01", "Input 10")
+      const numberMatch = baseLabel.match(/(\d+)(?!.*\d)/);
+      if (numberMatch) {
+        const numStr = numberMatch[1];
+        const numStart = parseInt(numStr, 10);
+        const padLen = numStr.length;
+        const prefix = baseLabel.substring(0, numberMatch.index);
+        const suffix = baseLabel.substring(numberMatch.index + numStr.length);
+        for (let i = 1; i < count; i++) {
+          labels.push(prefix + (numStart + i).toString().padStart(padLen, '0') + suffix);
+        }
+        return labels;
+      }
+
+      // No pattern found — duplicate
+      for (let i = 1; i < count; i++) {
+        labels.push(baseLabel);
+      }
+      return labels;
+    }
+
+    function selectAllLabels(type) {
+      const count = type === 'input' ? virtualState.inputs : virtualState.outputs;
+      for (let i = 0; i < count; i++) {
+        selectedLabelItems.add(`${type}-${i}`);
+      }
+      renderLabels();
+    }
+
+    // ===========================================
+    // SALVOS
+    // ===========================================
+    function renderSalvoDestinations() {
+      const destList = document.getElementById('salvosDestinationsList');
+      if (!destList) return;
+      destList.innerHTML = '';
+
+      for (let o = 0; o < virtualState.outputs; o++) {
+        const router = virtualState.outputRouterMap?.[o] || 'A';
+        const label = virtualState.outputLabels?.[o] || `Output ${o + 1}`;
+        const physIdx = virtualState.outputPhysicalIndices?.[o] || (o + 1);
+        const inputIdx = virtualState.routing?.[o];
+        const sourceLabel = inputIdx !== undefined
+          ? (virtualState.inputLabels?.[inputIdx] || `Input ${inputIdx + 1}`)
+          : '';
+
+        const row = document.createElement('div');
+        row.className = 'salvo-dest-row' + (selectedOutputsForCapture.has(o) ? ' selected' : '');
+        row.dataset.output = o;
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = selectedOutputsForCapture.has(o);
+        checkbox.addEventListener('change', (e) => {
+          e.stopPropagation();
+          toggleDestinationSelection(o);
+        });
+
+        const num = document.createElement('span');
+        num.className = 'dest-number';
+        num.textContent = physIdx;
+
+        const tag = document.createElement('span');
+        tag.className = `label-router-tag tag-${router.toLowerCase()}`;
+        tag.style.fontSize = '0.65rem';
+        tag.textContent = router;
+
+        const labelEl = document.createElement('span');
+        labelEl.className = 'dest-label';
+        labelEl.textContent = label;
+
+        const source = document.createElement('span');
+        source.className = 'dest-source';
+        source.textContent = sourceLabel ? `\u2190 ${sourceLabel}` : '';
+
+        row.appendChild(checkbox);
+        row.appendChild(num);
+        row.appendChild(tag);
+        row.appendChild(labelEl);
+        row.appendChild(source);
+
+        row.addEventListener('click', (e) => {
+          if (e.target.tagName !== 'INPUT') {
+            toggleDestinationSelection(o);
+          }
+        });
+
+        destList.appendChild(row);
+      }
+    }
+
+    function toggleDestinationSelection(output) {
+      if (selectedOutputsForCapture.has(output)) {
+        selectedOutputsForCapture.delete(output);
+      } else {
+        selectedOutputsForCapture.add(output);
+      }
+      updateCaptureSelectionUI();
+      updateDestinationRowUI(output);
+    }
+
+    function updateDestinationRowUI(output) {
+      const row = document.querySelector(`.salvo-dest-row[data-output="${output}"]`);
+      if (row) {
+        const checkbox = row.querySelector('input[type="checkbox"]');
+        const isSelected = selectedOutputsForCapture.has(output);
+        row.classList.toggle('selected', isSelected);
+        if (checkbox) checkbox.checked = isSelected;
+      }
+    }
+
+    function updateCaptureSelectionUI() {
+      const countSpan = document.getElementById('salvoSelectionCount');
+      const captureSelectedBtn = document.getElementById('captureSelectedBtn');
+      const clearBtn = document.getElementById('clearSelectionBtn');
+
+      const count = selectedOutputsForCapture.size;
+
+      if (count > 0) {
+        countSpan.textContent = `${count} destination${count > 1 ? 's' : ''} selected`;
+        captureSelectedBtn.disabled = false;
+        clearBtn.style.display = 'inline-block';
+      } else {
+        countSpan.textContent = '';
+        captureSelectedBtn.disabled = true;
+        clearBtn.style.display = 'none';
+      }
+    }
+
+    function renderSalvos() {
+      const salvosList = document.getElementById('salvosList');
+      const salvosEmpty = document.getElementById('salvosEmpty');
+
+      // Remove existing salvo cards
+      const existingCards = salvosList.querySelectorAll('.salvo-card');
+      existingCards.forEach(c => c.remove());
+
+      if (!salvos || salvos.length === 0) {
+        salvosEmpty.style.display = 'block';
+        return;
+      }
+
+      salvosEmpty.style.display = 'none';
+
+      for (const salvo of salvos) {
+        const card = document.createElement('div');
+        card.className = 'salvo-card';
+        card.dataset.id = salvo.id;
+
+        const crossRoutes = salvo.routes.filter(r => r.outputRouter !== r.inputRouter).length;
+        const infoText = `${salvo.routes.length} routes${crossRoutes > 0 ? `, ${crossRoutes} cross-router` : ''}`;
+
+        card.innerHTML = `
+          <div class="salvo-card-header">
+            <div>
+              <div class="salvo-card-name">${escapeHtml(salvo.name)}</div>
+              <div class="salvo-card-info">${infoText}</div>
+            </div>
+            <div class="salvo-card-actions">
+              <button class="btn btn-small btn-success salvo-recall-btn" data-id="${salvo.id}">Recall</button>
+              <button class="btn btn-small btn-danger salvo-delete-btn" data-id="${salvo.id}">Delete</button>
+            </div>
+          </div>
+          <div class="salvo-card-body">
+            ${salvo.routes.map(r => {
+              const cross = r.outputRouter !== r.inputRouter;
+              return `<div class="salvo-route-row">
+                <span class="route-output">${escapeHtml(r.outputLabel || `Out ${r.output + 1}`)}</span>
+                <span class="route-arrow">&larr;</span>
+                <span class="route-input">${escapeHtml(r.inputLabel || `In ${r.input + 1}`)}</span>
+                ${cross ? '<span class="route-cross">[cross]</span>' : ''}
+              </div>`;
+            }).join('')}
+          </div>
+        `;
+        salvosList.appendChild(card);
+      }
+    }
+
+    function renderSalvoQuickButtons() {
+      const container = document.getElementById('salvoQuickButtons');
+      if (salvos.length === 0) {
+        container.innerHTML = '<span style="font-size:0.75rem; color:#666">No salvos</span>';
+        return;
+      }
+
+      container.innerHTML = '';
+      for (const salvo of salvos) {
+        const btn = document.createElement('button');
+        btn.className = 'salvo-quick-btn';
+        btn.textContent = salvo.name;
+        btn.title = `Recall: ${salvo.name}`;
+        btn.dataset.id = salvo.id;
+        btn.addEventListener('click', () => recallSalvo(salvo.id));
+        container.appendChild(btn);
+      }
+    }
+
+    async function captureSalvo(selectedOutputs) {
+      const nameInput = document.getElementById('salvoNameInput');
+      const name = nameInput.value.trim() || `Salvo ${salvos.length + 1}`;
+      const result = await api.captureSalvo(name, selectedOutputs);
+      if (result.success) {
+        salvos = result.salvos;
+        nameInput.value = '';
+        selectedOutputsForCapture.clear();
+        renderSalvos();
+        renderSalvoQuickButtons();
+        renderSalvoDestinations();
+        updateCaptureSelectionUI();
+        showToast(`Salvo "${name}" captured`, 'success');
+      } else {
+        showToast(result.error || 'Capture failed', 'error');
+      }
+    }
+
+    async function recallSalvo(salvoId) {
+      const salvo = salvos.find(s => s.id === salvoId);
+      const result = await api.recallSalvo(salvoId);
+      if (result.success) {
+        showToast(`Salvo "${salvo?.name}" recalled (${result.appliedCount} routes)`, 'success');
+      } else {
+        const msg = result.errors ? result.errors.join('; ') : 'Recall failed';
+        showToast(`Partial recall: ${result.appliedCount || 0} applied. ${msg}`, 'warning');
+      }
+    }
+
+    async function deleteSalvo(salvoId) {
+      const result = await api.deleteSalvo(salvoId);
+      if (result.success) {
+        salvos = result.salvos;
+        renderSalvos();
+        renderSalvoQuickButtons();
+        showToast('Salvo deleted', 'info');
+      }
+    }
+
+    // ===========================================
+    // IMPORT / EXPORT
+    // ===========================================
+    async function exportSalvos() {
+      const result = await api.exportSalvos();
+      if (result.success) {
+        showToast(`Exported ${result.count} salvos`, 'success');
+      } else if (result.error !== 'Cancelled') {
+        showToast(result.error || 'Export failed', 'error');
+      }
+    }
+
+    async function importSalvos() {
+      const result = await api.importSalvos();
+      if (!result.success && result.error !== 'Cancelled') {
+        showToast(result.error || 'Import failed', 'error');
+        return;
+      }
+
+      if (result.needsResolution) {
+        pendingImportData = result.imported;
+        const dupList = document.getElementById('importDupList');
+        dupList.innerHTML = result.duplicateNames.map(n => `<div>${escapeHtml(n)}</div>`).join('');
+        document.getElementById('importDialogOverlay').classList.add('visible');
+        return;
+      }
+
+      if (result.success) {
+        salvos = result.salvos;
+        renderSalvos();
+        renderSalvoQuickButtons();
+        showToast(`Imported ${result.count} salvos`, 'success');
+      }
+    }
+
+    async function resolveImport(resolution) {
+      document.getElementById('importDialogOverlay').classList.remove('visible');
+      if (!pendingImportData) return;
+
+      const result = await api.importSalvosResolve(pendingImportData, resolution);
+      pendingImportData = null;
+      if (result.success) {
+        salvos = result.salvos;
+        renderSalvos();
+        renderSalvoQuickButtons();
+        showToast(`Imported ${result.count} salvos (${resolution})`, 'success');
+      }
+    }
+
+    // ===========================================
+    // EVENT LISTENERS
+    // ===========================================
+    function setupEventListeners() {
+      // Tabs
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+      });
+
+      // Router connections
+      document.getElementById('connectA').addEventListener('click', () => connectRouter('A'));
+      document.getElementById('disconnectA').addEventListener('click', () => disconnectRouter('A'));
+      document.getElementById('connectB').addEventListener('click', () => connectRouter('B'));
+      document.getElementById('disconnectB').addEventListener('click', () => disconnectRouter('B'));
+
+      // Protocol changes
+      document.getElementById('protocolA').addEventListener('change', () => updateProtocolUI('A'));
+      document.getElementById('protocolB').addEventListener('change', () => updateProtocolUI('B'));
+
+      // Tie-line add/remove
+      document.getElementById('addTieLineAtoB').addEventListener('click', () => addTieLine('aToB'));
+      document.getElementById('addTieLineBtoA').addEventListener('click', () => addTieLine('bToA'));
+
+      // Release all tie-lines
+      document.getElementById('releaseAllTieLines').addEventListener('click', async () => {
+        await api.releaseAllTieLines();
+        showToast('All tie-lines released', 'success');
+      });
+
+      // Delegate tie-line remove clicks
+      document.addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.remove-btn');
+        if (removeBtn) {
+          removeTieLine(removeBtn.dataset.dir, parseInt(removeBtn.dataset.idx));
+        }
+      });
+
+      // Settings
+      document.getElementById('autoConnect').addEventListener('change', (e) => {
+        api.setAutoConnect(e.target.checked);
+      });
+      document.getElementById('autoReconnect').addEventListener('change', (e) => {
+        api.setAutoReconnect(e.target.checked);
+      });
+
+      // XY Grid interactions
+      const xyGrid = document.getElementById('xyGrid');
+      let lastDragEnd = null;
+
+      function onDocumentMouseMove(e) {
+        if (!isDragging) return;
+        const el = document.elementFromPoint(e.clientX, e.clientY);
+        if (el) {
+          const cell = el.closest('td[data-output][data-input]');
+          if (cell) {
+            lastDragEnd = { output: parseInt(cell.dataset.output), input: parseInt(cell.dataset.input) };
+            updateDragPreview(dragStart, lastDragEnd);
+          }
+        }
+      }
+
+      async function onDocumentMouseUp(e) {
+        if (!isDragging) return;
+        clearDragPreview();
+
+        let dragEnd = null;
+        const el = document.elementFromPoint(e.clientX, e.clientY);
+        if (el) {
+          const cell = el.closest('td[data-output][data-input]');
+          if (cell) {
+            dragEnd = { output: parseInt(cell.dataset.output), input: parseInt(cell.dataset.input) };
+          }
+        }
+        if (!dragEnd) dragEnd = lastDragEnd;
+
+        if (dragStart && dragEnd) {
+          await applyDragRoutes(dragStart, dragEnd);
+        }
+
+        dragStart = null;
+        lastDragEnd = null;
+        isDragging = false;
+
+        document.removeEventListener('mousemove', onDocumentMouseMove);
+        document.removeEventListener('mouseup', onDocumentMouseUp);
+      }
+
+      xyGrid.addEventListener('mousedown', (e) => {
+        const td = e.target.closest('td[data-output][data-input]');
+        if (!td) return;
+        e.preventDefault();
+        dragStart = { output: parseInt(td.dataset.output), input: parseInt(td.dataset.input) };
+        lastDragEnd = dragStart;
+        isDragging = true;
+        updateDragPreview(dragStart, dragStart);
+        document.addEventListener('mousemove', onDocumentMouseMove);
+        document.addEventListener('mouseup', onDocumentMouseUp);
+      });
+
+      // Scroll updates minimap
+      document.getElementById('xyGridContainer').addEventListener('scroll', () => updateMinimap());
+
+      // Minimap click/drag (delegated since minimap is rebuilt with the grid)
+      let minimapDragging = false;
+      document.addEventListener('mousedown', (e) => {
+        if (e.target.closest('.xy-minimap')) {
+          minimapDragging = true;
+          handleMinimapClick(e.clientX, e.clientY);
+        }
+      });
+      document.addEventListener('mousemove', (e) => {
+        if (minimapDragging) {
+          handleMinimapClick(e.clientX, e.clientY);
+        }
+      });
+      document.addEventListener('mouseup', () => {
+        minimapDragging = false;
+      });
+
+      // Level selector
+      document.getElementById('levelSelect').addEventListener('change', (e) => {
+        activeLevel = parseInt(e.target.value) || 0;
+      });
+
+      // Labels - input change
+      document.addEventListener('change', (e) => {
+        if (e.target.matches('.label-item input')) {
+          const type = e.target.dataset.type;
+          const index = parseInt(e.target.dataset.index);
+          handleLabelChange(type, index, e.target.value);
+        }
+      });
+
+      // Labels - context menu
+      document.addEventListener('contextmenu', (e) => {
+        const item = e.target.closest('.label-item');
+        if (item) {
+          showLabelContextMenu(e, item.dataset.type, parseInt(item.dataset.index));
+          return;
+        }
+        // Close context menu on other right-clicks
+        document.getElementById('contextMenu').classList.remove('visible');
+      });
+
+      // Labels - selection
+      document.addEventListener('click', (e) => {
+        const item = e.target.closest('.label-item');
+        if (item && !e.target.matches('input')) {
+          const type = item.dataset.type;
+          const index = parseInt(item.dataset.index);
+          const key = `${type}-${index}`;
+          if (e.shiftKey && lastSelectedLabel && lastSelectedLabel.type === type) {
+            // Range select from anchor to current
+            const from = Math.min(lastSelectedLabel.index, index);
+            const to = Math.max(lastSelectedLabel.index, index);
+            for (let i = from; i <= to; i++) {
+              selectedLabelItems.add(`${type}-${i}`);
+            }
+          } else if (e.metaKey || e.ctrlKey) {
+            if (selectedLabelItems.has(key)) selectedLabelItems.delete(key);
+            else selectedLabelItems.add(key);
+            lastSelectedLabel = { type, index };
+          } else {
+            selectedLabelItems.clear();
+            selectedLabelItems.add(key);
+            lastSelectedLabel = { type, index };
+          }
+          renderLabels();
+        }
+      });
+
+      // Close context menu
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.context-menu')) {
+          document.getElementById('contextMenu').classList.remove('visible');
+        }
+      });
+
+      // Salvos
+      document.getElementById('captureAllBtn').addEventListener('click', () => captureSalvo(null));
+      document.getElementById('captureSelectedBtn').addEventListener('click', () => {
+        if (selectedOutputsForCapture.size > 0) {
+          captureSalvo(Array.from(selectedOutputsForCapture));
+        }
+      });
+      document.getElementById('selectAllDestsBtn').addEventListener('click', () => {
+        for (let o = 0; o < virtualState.outputs; o++) {
+          selectedOutputsForCapture.add(o);
+        }
+        updateCaptureSelectionUI();
+        renderSalvoDestinations();
+      });
+      document.getElementById('selectNoneDestsBtn').addEventListener('click', () => {
+        selectedOutputsForCapture.clear();
+        updateCaptureSelectionUI();
+        renderSalvoDestinations();
+      });
+      document.getElementById('clearSelectionBtn').addEventListener('click', () => {
+        selectedOutputsForCapture.clear();
+        updateCaptureSelectionUI();
+        renderSalvoDestinations();
+      });
+      document.getElementById('exportSalvosBtn').addEventListener('click', exportSalvos);
+      document.getElementById('importSalvosBtn').addEventListener('click', importSalvos);
+
+      // Salvo card actions (delegated)
+      document.getElementById('salvosList').addEventListener('click', (e) => {
+        const recallBtn = e.target.closest('.salvo-recall-btn');
+        if (recallBtn) { recallSalvo(recallBtn.dataset.id); return; }
+
+        const deleteBtn = e.target.closest('.salvo-delete-btn');
+        if (deleteBtn) { deleteSalvo(deleteBtn.dataset.id); return; }
+
+        const header = e.target.closest('.salvo-card-header');
+        if (header && !e.target.closest('.salvo-card-actions')) {
+          header.closest('.salvo-card').classList.toggle('expanded');
+        }
+      });
+
+      // Import dialog
+      document.getElementById('importOverwriteBtn').addEventListener('click', () => resolveImport('overwrite'));
+      document.getElementById('importRenameBtn').addEventListener('click', () => resolveImport('rename'));
+      document.getElementById('importSkipBtn').addEventListener('click', () => resolveImport('skip'));
+      document.getElementById('importCancelBtn').addEventListener('click', () => {
+        document.getElementById('importDialogOverlay').classList.remove('visible');
+        pendingImportData = null;
+      });
+
+      // Window resize
+      window.addEventListener('resize', () => {
+        if (activeTab === 'xy') {
+          updateMinimap();
+        }
+      });
+    }
+
+    // ===========================================
+    // IPC LISTENERS
+    // ===========================================
+    function setupIPCListeners() {
+      // Router A
+      api.onRouterAConnected((state) => {
+        routerAState = state;
+        routerAConnected = true;
+        setConnectionStatus('A', 'connected', `Connected (${state.inputs}x${state.outputs})`);
+        onStateChange();
+      });
+      api.onRouterADisconnected(() => {
+        routerAConnected = false;
+        routerAState = null;
+        setConnectionStatus('A', 'disconnected', 'Disconnected');
+        onStateChange();
+      });
+      api.onRouterAReconnecting((attempt) => {
+        setConnectionStatus('A', 'connecting', `Reconnecting (attempt ${attempt})...`);
+      });
+      api.onRouterAError((err) => {
+        showToast(`Router A: ${err}`, 'error');
+      });
+      api.onRouterARoutingChanged(() => onStateChange());
+      api.onRouterAInputLabelsChanged(() => onStateChange());
+      api.onRouterAOutputLabelsChanged(() => onStateChange());
+
+      // Router B
+      api.onRouterBConnected((state) => {
+        routerBState = state;
+        routerBConnected = true;
+        setConnectionStatus('B', 'connected', `Connected (${state.inputs}x${state.outputs})`);
+        onStateChange();
+      });
+      api.onRouterBDisconnected(() => {
+        routerBConnected = false;
+        routerBState = null;
+        setConnectionStatus('B', 'disconnected', 'Disconnected');
+        onStateChange();
+      });
+      api.onRouterBReconnecting((attempt) => {
+        setConnectionStatus('B', 'connecting', `Reconnecting (attempt ${attempt})...`);
+      });
+      api.onRouterBError((err) => {
+        showToast(`Router B: ${err}`, 'error');
+      });
+      api.onRouterBRoutingChanged(() => onStateChange());
+      api.onRouterBInputLabelsChanged(() => onStateChange());
+      api.onRouterBOutputLabelsChanged(() => onStateChange());
+
+      // Virtual state
+      api.onVirtualStateUpdated((state) => {
+        virtualState = state;
+        if (activeTab === 'xy') { renderXYGrid(); updateMinimap(); }
+        else if (activeTab === 'labels') renderLabels();
+        else if (activeTab === 'salvos') renderSalvoDestinations();
+      });
+
+      // Tie-line state
+      api.onTieLineStateUpdated((state) => {
+        tieLineState = state;
+        updateTieLineStatusBar();
+      });
+    }
+
+    async function onStateChange() {
+      // Fetch latest virtual state
+      virtualState = await api.getVirtualState();
+      tieLineState = await api.getTieLineState();
+
+      if (activeTab === 'xy') { renderXYGrid(); updateMinimap(); }
+      else if (activeTab === 'labels') renderLabels();
+      else if (activeTab === 'salvos') renderSalvoDestinations();
+      updateTieLineStatusBar();
+    }
+
+    // ===========================================
+    // UTILITIES
+    // ===========================================
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // ===========================================
+    // START
+    // ===========================================
+    init();
+  </script>
+</body>
+</html>
