@@ -89,31 +89,44 @@ function attachControllerEvents(controller, routerId) {
 
   controller.on('routing-changed', (changes) => {
     sendToRenderer(`router-${routerId}-routing-changed`, changes);
-    rebuildVirtualState();
+    scheduleRebuild();
   });
 
   controller.on('input-labels-changed', (changes) => {
     sendToRenderer(`router-${routerId}-input-labels-changed`, changes);
-    rebuildVirtualState();
+    scheduleRebuild();
   });
 
   controller.on('output-labels-changed', (changes) => {
     sendToRenderer(`router-${routerId}-output-labels-changed`, changes);
-    rebuildVirtualState();
+    scheduleRebuild();
   });
 
   controller.on('locks-changed', (changes) => {
     sendToRenderer(`router-${routerId}-locks-changed`, changes);
-    rebuildVirtualState();
+    scheduleRebuild();
   });
 
   controller.on('state-updated', () => {
-    rebuildVirtualState();
+    scheduleRebuild();
   });
 
   controller.on('error', (err) => {
     sendToRenderer(`router-${routerId}-error`, err.message || err);
   });
+}
+
+let _updatingTieLineLabels = false;
+let _rebuildPending = false;
+
+function scheduleRebuild() {
+  if (!_rebuildPending) {
+    _rebuildPending = true;
+    process.nextTick(() => {
+      _rebuildPending = false;
+      rebuildVirtualState();
+    });
+  }
 }
 
 function rebuildVirtualState() {
@@ -130,6 +143,14 @@ function rebuildVirtualState() {
   if (tieLineEngine && controllerA?.isConnected() && controllerB?.isConnected()) {
     tieLineEngine.reconstructStateFromRouting();
     virtualRouter.update(null, null, null, tieLineEngine.getState());
+  }
+
+  // Update tie-line port labels to show the source being carried
+  // Guard against re-entrancy since setLabel triggers label-changed events
+  if (tieLineEngine && !_updatingTieLineLabels) {
+    _updatingTieLineLabels = true;
+    tieLineEngine.updateTieLineLabels();
+    _updatingTieLineLabels = false;
   }
 
   sendToRenderer('virtual-state-updated', virtualRouter.getState());
@@ -263,22 +284,12 @@ function setupIPC() {
     return tieLineEngine?.getState() || { aToB: [], bToA: [] };
   });
 
-  ipcMain.handle('release-all-tie-lines', () => {
-    if (!tieLineEngine) return { success: false, error: 'Engine not initialized' };
-    tieLineEngine.releaseAllTieLines();
-    rebuildVirtualState();
-    return { success: true };
-  });
-
   // Virtual routing
   ipcMain.handle('set-virtual-route', async (event, virtualOutput, virtualInput, level = 0) => {
     ensureEngine();
     if (!virtualRouter) rebuildVirtualState();
     const result = await tieLineEngine.executeVirtualRoute(virtualOutput, virtualInput, virtualRouter, level);
-    if (result.success) {
-      // Rebuild after route
-      setTimeout(() => rebuildVirtualState(), 100);
-    }
+    // rebuildVirtualState() is triggered by the routing-changed event from the controller
     return result;
   });
 
@@ -324,18 +335,6 @@ function setupIPC() {
     ensureEngine();
     tieLineEngine.updateConfig(settings.tieLines);
     rebuildVirtualState();
-
-    // Label the tie-line ports on the routers
-    const tlNum = settings.tieLines[direction].length;
-    const arrow = direction === 'aToB' ? 'A>B' : 'B>A';
-    const tlLabel = `TL${tlNum} ${arrow}`;
-    if (direction === 'aToB') {
-      if (controllerA?.isConnected()) controllerA.setOutputLabel(mapping.routerAOutput, tlLabel);
-      if (controllerB?.isConnected()) controllerB.setInputLabel(mapping.routerBInput, tlLabel);
-    } else {
-      if (controllerB?.isConnected()) controllerB.setOutputLabel(mapping.routerBOutput, tlLabel);
-      if (controllerA?.isConnected()) controllerA.setInputLabel(mapping.routerAInput, tlLabel);
-    }
 
     return { success: true, tieLines: settings.tieLines };
   });
@@ -488,7 +487,7 @@ function setupIPC() {
       }
     }
 
-    setTimeout(() => rebuildVirtualState(), 100);
+    // rebuildVirtualState() is triggered by routing-changed events from the controllers
 
     return {
       success: errors.length === 0,
@@ -652,26 +651,76 @@ function csvParseLine(line) {
 app.whenReady().then(async () => {
   loadSettings();
 
-  // Set up About panel
+  // Custom About window
   const iconsPath = path.join(__dirname, '..', 'icons');
-  const logoPath = path.join(iconsPath, 'VWLogo.png');
+  const buildPath = path.join(__dirname, '..', 'build');
 
-  if (process.platform === 'darwin') {
-    app.setAboutPanelOptions({
-      applicationName: 'Tie-Line Manager',
-      applicationVersion: require('../package.json').version,
-      copyright: 'Video Walrus Ltd.',
-      iconPath: logoPath
+  let aboutWindow = null;
+  function showAboutWindow() {
+    if (aboutWindow) { aboutWindow.focus(); return; }
+
+    aboutWindow = new BrowserWindow({
+      width: 380,
+      height: 420,
+      resizable: false,
+      minimizable: false,
+      maximizable: false,
+      fullscreenable: false,
+      backgroundColor: '#1a1a2e',
+      titleBarStyle: process.platform === 'darwin' ? 'hidden' : 'default',
+      title: 'About Tie-Line Manager',
+      webPreferences: { nodeIntegration: false, contextIsolation: true }
     });
+
+    const appIconB64 = fs.readFileSync(path.join(buildPath, 'icon.png')).toString('base64');
+    const companyLogoB64 = fs.readFileSync(path.join(iconsPath, 'company-logo.png')).toString('base64');
+    const version = app.getVersion();
+
+    aboutWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(`<!DOCTYPE html>
+<html><head><style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    -webkit-app-region: drag;
+    user-select: none;
+    text-align: center;
+    padding: 30px;
+  }
+  .app-icon { width: 96px; height: 96px; margin-bottom: 16px; }
+  .app-name { font-size: 20px; font-weight: 600; margin-bottom: 4px; color: #fff; }
+  .version { font-size: 13px; color: #888; margin-bottom: 20px; }
+  .description { font-size: 12px; color: #999; line-height: 1.5; margin-bottom: 24px; max-width: 300px; }
+  .divider { width: 60px; height: 1px; background: rgba(255,255,255,0.15); margin-bottom: 24px; }
+  .company-logo { height: 40px; margin-bottom: 8px; opacity: 0.9; }
+  .copyright { font-size: 11px; color: #666; }
+</style></head><body>
+  <img class="app-icon" src="data:image/png;base64,${appIconB64}">
+  <div class="app-name">Tie-Line Manager</div>
+  <div class="version">Version ${version}</div>
+  <div class="description">Connect two broadcast routers and manage tie-lines between them as one virtual router</div>
+  <div class="divider"></div>
+  <img class="company-logo" src="data:image/png;base64,${companyLogoB64}">
+  <div class="copyright">\u00A9 2026 Video Walrus Ltd</div>
+</body></html>`)}`);
+
+    aboutWindow.setMenu(null);
+    aboutWindow.on('closed', () => { aboutWindow = null; });
   }
 
   // Application menu
-  const menuTemplate = [];
-  if (process.platform === 'darwin') {
-    menuTemplate.push({
+  const isMac = process.platform === 'darwin';
+  const menuTemplate = [
+    ...(isMac ? [{
       label: app.name,
       submenu: [
-        { role: 'about' },
+        { label: 'About Tie-Line Manager', click: showAboutWindow },
         { type: 'separator' },
         { role: 'services' },
         { type: 'separator' },
@@ -681,10 +730,7 @@ app.whenReady().then(async () => {
         { type: 'separator' },
         { role: 'quit' }
       ]
-    });
-  }
-
-  menuTemplate.push(
+    }] : []),
     {
       label: 'Edit',
       submenu: [
@@ -707,11 +753,21 @@ app.whenReady().then(async () => {
       label: 'Window',
       submenu: [
         { role: 'minimize' }, { role: 'zoom' },
-        { type: 'separator' },
-        { role: 'close' }
+        ...(isMac ? [
+          { type: 'separator' },
+          { role: 'front' }
+        ] : [
+          { role: 'close' }
+        ])
       ]
-    }
-  );
+    },
+    ...(!isMac ? [{
+      label: 'Help',
+      submenu: [
+        { label: 'About Tie-Line Manager', click: showAboutWindow }
+      ]
+    }] : [])
+  ];
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
 

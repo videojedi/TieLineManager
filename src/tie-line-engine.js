@@ -263,19 +263,35 @@ class TieLineEngine extends EventEmitter {
     this.emit('state-changed', this.state);
   }
 
-  // Release all tie-lines back to free state
-  releaseAllTieLines() {
-    for (const tieLine of this.state.aToB) {
-      tieLine.status = 'free';
-      tieLine.sourceInput = null;
-      tieLine.destinations = [];
+  // Update tie-line input labels on the receiving router to show the source being carried
+  updateTieLineLabels() {
+    // A→B tie-lines: update Router B input label
+    for (let i = 0; i < this.state.aToB.length; i++) {
+      const tl = this.state.aToB[i];
+      const tlNum = i + 1;
+      if (tl.status === 'in-use' && tl.sourceInput !== null) {
+        const stateA = this.controllerA?.isConnected() ? this.controllerA.getState() : null;
+        const sourceName = stateA?.inputLabels?.[tl.sourceInput];
+        const label = sourceName ? `TL${tlNum} ${sourceName}` : `TL${tlNum} A>B`;
+        if (this.controllerB?.isConnected()) this.controllerB.setInputLabel(tl.routerBInput, label);
+      } else {
+        if (this.controllerB?.isConnected()) this.controllerB.setInputLabel(tl.routerBInput, `TL${tlNum} A>B`);
+      }
     }
-    for (const tieLine of this.state.bToA) {
-      tieLine.status = 'free';
-      tieLine.sourceInput = null;
-      tieLine.destinations = [];
+
+    // B→A tie-lines: update Router A input label
+    for (let i = 0; i < this.state.bToA.length; i++) {
+      const tl = this.state.bToA[i];
+      const tlNum = i + 1;
+      if (tl.status === 'in-use' && tl.sourceInput !== null) {
+        const stateB = this.controllerB?.isConnected() ? this.controllerB.getState() : null;
+        const sourceName = stateB?.inputLabels?.[tl.sourceInput];
+        const label = sourceName ? `TL${tlNum} ${sourceName}` : `TL${tlNum} B>A`;
+        if (this.controllerA?.isConnected()) this.controllerA.setInputLabel(tl.routerAInput, label);
+      } else {
+        if (this.controllerA?.isConnected()) this.controllerA.setInputLabel(tl.routerAInput, `TL${tlNum} B>A`);
+      }
     }
-    this.emit('state-changed', this.state);
   }
 
   // Reconstruct tie-line state from current physical routing

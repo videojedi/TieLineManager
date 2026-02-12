@@ -17,7 +17,6 @@ contextBridge.exposeInMainWorld('tieLineManager', {
   addTieLine: (direction, mapping) => ipcRenderer.invoke('add-tie-line', direction, mapping),
   removeTieLine: (direction, index) => ipcRenderer.invoke('remove-tie-line', direction, index),
   getTieLineState: () => ipcRenderer.invoke('get-tie-line-state'),
-  releaseAllTieLines: () => ipcRenderer.invoke('release-all-tie-lines'),
 
   // Locks
   setVirtualLock: (virtualOutput, lockState) => ipcRenderer.invoke('set-virtual-lock', virtualOutput, lockState),

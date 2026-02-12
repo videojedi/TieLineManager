@@ -31,10 +31,21 @@
 
     .header h1 { font-size: 1.3rem; font-weight: 600; color: #fff; }
 
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
     .header-status {
       display: flex;
       align-items: center;
       gap: 12px;
+    }
+
+    .header-logo {
+      height: 24px;
+      opacity: 0.7;
     }
 
     .router-status {
@@ -275,16 +286,19 @@
       flex-direction: column;
       overflow: hidden;
       position: relative;
+      padding: 15px;
+      gap: 10px;
     }
 
     .xy-toolbar {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 8px 12px;
+      padding: 8px 15px;
       background: rgba(0,0,0,0.2);
-      border-bottom: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
       flex-wrap: wrap;
+      flex-shrink: 0;
     }
 
     .xy-toolbar .toolbar-label {
@@ -318,6 +332,9 @@
       flex: 1;
       overflow: auto;
       position: relative;
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
     }
 
     .xy-grid-wrapper {
@@ -339,18 +356,18 @@
 
     .xy-grid th {
       position: sticky;
-      background: #1a1a2e;
+      background: #151525;
       z-index: 2;
       padding: 0;
-      border-color: #222240;
+      border-color: #1e1e36;
     }
 
     .xy-grid th.corner-cell {
       top: 0;
       left: 0;
       z-index: 3;
-      background: #1a1a2e;
-      box-shadow: 1px 1px 0 0 #1a1a2e;
+      background: #151525;
+      box-shadow: 1px 1px 0 0 #151525;
     }
 
     /* Column index numbers (inputs/sources across the top) */
@@ -371,6 +388,9 @@
       min-width: 28px;
       max-width: 28px;
       height: 100px;
+      vertical-align: bottom;
+      padding-bottom: 4px;
+      text-align: center;
     }
 
     .xy-grid th.input-header .header-text {
@@ -380,12 +400,12 @@
       font-size: 0.7rem;
       font-weight: 400;
       color: #ccc;
-      padding: 4px 2px;
+      padding: 4px 0;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       max-height: 95px;
-      display: block;
+      display: inline-block;
     }
 
     /* Row label headers (outputs/destinations, left side) */
@@ -394,7 +414,7 @@
       white-space: nowrap;
       padding-right: 6px;
       max-width: 140px;
-      box-shadow: 1px 0 0 0 #1a1a2e;
+      box-shadow: 1px 0 0 0 #151525;
     }
 
     .xy-grid th.output-header .header-text {
@@ -407,6 +427,12 @@
       display: block;
       max-width: 140px;
     }
+
+    /* Hover highlight for row/column headers */
+    .xy-grid th.input-header.highlight { background: #143d28; }
+    .xy-grid th.input-header.highlight .header-text { color: #fff; }
+    .xy-grid th.output-header.highlight { background: #3d1414; }
+    .xy-grid th.output-header.highlight .header-text { color: #fff; }
 
     /* Router color coding in headers */
     .xy-grid th.router-a .header-text { color: #7baaf7; }
@@ -494,7 +520,7 @@
     .xy-grid td.lock-cell {
       position: sticky;
       left: 0;
-      background: #1a1a2e;
+      background: #151525;
       width: 28px;
       min-width: 28px;
       max-width: 28px;
@@ -543,7 +569,7 @@
     .xy-grid td.output-index {
       position: sticky;
       left: 28px;
-      background: #1a1a2e;
+      background: #151525;
       font-size: 0.65rem;
       color: #666;
       text-align: center;
@@ -585,12 +611,13 @@
     .tieline-status-bar {
       display: flex;
       gap: 20px;
-      padding: 6px 12px;
-      background: rgba(0,0,0,0.3);
-      border-top: 1px solid rgba(255,255,255,0.1);
+      padding: 8px 15px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 6px;
       font-size: 0.8rem;
       color: #aaa;
       align-items: center;
+      flex-shrink: 0;
     }
 
     .tieline-status-item {
@@ -605,19 +632,6 @@
     }
 
     .tieline-status-count.full { color: #ff4757; }
-
-    .btn-release-tl {
-      margin-left: auto;
-      padding: 3px 10px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 4px;
-      color: #aaa;
-      font-size: 0.75rem;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .btn-release-tl:hover { background: rgba(255, 71, 87, 0.2); border-color: #ff4757; color: #ff4757; }
 
     .tieline-status-detail {
       font-size: 0.75rem;
@@ -650,39 +664,64 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      padding: 20px;
+      gap: 15px;
     }
 
     .labels-toolbar {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 8px 12px;
+      padding: 10px 15px;
       background: rgba(0,0,0,0.2);
-      border-bottom: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+
+    .labels-toolbar .separator {
+      width: 1px;
+      height: 24px;
+      background: rgba(255,255,255,0.2);
+      margin: 0 5px;
+    }
+
+    .labels-toolbar .selection-count {
+      font-size: 0.8rem;
+      color: #888;
+      margin-left: auto;
+    }
+
+    .labels-toolbar .selection-hint {
+      font-size: 0.75rem;
+      color: #666;
+      font-style: italic;
+      width: 100%;
     }
 
     .labels-columns {
       flex: 1;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0;
+      display: flex;
+      gap: 20px;
+      min-height: 0;
       overflow: hidden;
     }
 
     .label-column {
+      flex: 1;
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      border-right: 1px solid rgba(255,255,255,0.1);
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
     }
 
-    .label-column:last-child { border-right: none; }
-
     .label-column-header {
-      padding: 10px 15px;
-      background: rgba(0,0,0,0.2);
-      font-size: 0.85rem;
+      padding: 12px 15px;
+      font-size: 0.9rem;
       font-weight: 600;
+      color: #4a69bd;
       border-bottom: 1px solid rgba(255,255,255,0.1);
     }
 
@@ -695,17 +734,17 @@
     .label-item {
       display: flex;
       align-items: center;
-      padding: 4px 12px;
+      padding: 5px 12px;
       gap: 8px;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
     }
     .label-item:hover { background: rgba(255,255,255,0.05); }
 
     .label-item .label-index {
       font-size: 0.75rem;
       color: #666;
-      min-width: 30px;
+      min-width: 24px;
       text-align: right;
+      flex-shrink: 0;
     }
 
     .label-item .label-router-tag {
@@ -715,18 +754,28 @@
       font-weight: 600;
       min-width: 18px;
       text-align: center;
+      flex-shrink: 0;
     }
     .label-router-tag.tag-a { background: rgba(74,105,189,0.3); color: #7baaf7; }
     .label-router-tag.tag-b { background: rgba(225,112,85,0.3); color: #f0a060; }
 
-    .label-item input {
+    .label-item .label-name {
       flex: 1;
+      font-size: 0.85rem;
+      color: #888;
+      min-width: 60px;
+    }
+
+    .label-item input {
+      width: 200px;
+      max-width: 200px;
       padding: 4px 8px;
       background: rgba(0,0,0,0.2);
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 3px;
       color: #e0e0e0;
       font-size: 0.85rem;
+      flex-shrink: 0;
     }
     .label-item input:focus {
       outline: none;
@@ -742,15 +791,17 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      padding: 20px;
+      gap: 15px;
     }
 
     .salvos-toolbar {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 8px 12px;
+      padding: 10px 15px;
       background: rgba(0,0,0,0.2);
-      border-bottom: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
       flex-wrap: wrap;
       flex-shrink: 0;
     }
@@ -763,6 +814,11 @@
       color: #fff;
       font-size: 0.85rem;
       width: 200px;
+    }
+
+    .salvos-toolbar input:focus {
+      outline: none;
+      border-color: #4a69bd;
     }
 
     .salvos-toolbar .separator {
@@ -783,7 +839,6 @@
       flex: 1;
       min-height: 0;
       overflow: hidden;
-      padding: 10px;
     }
 
     .salvos-destinations-column {
@@ -792,6 +847,30 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .salvos-destinations-header {
+      padding: 12px 15px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #4a69bd;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .salvos-destinations-header-buttons {
+      display: flex;
+      gap: 6px;
+    }
+
+    .salvos-destinations-header-buttons .btn-small {
+      padding: 3px 8px;
+      font-size: 0.7rem;
     }
 
     .salvos-list-column {
@@ -800,66 +879,59 @@
       flex-direction: column;
       min-width: 0;
       overflow: hidden;
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
     }
 
-    .salvos-column-header {
-      font-size: 1rem;
+    .salvos-list-header {
+      padding: 12px 15px;
+      font-size: 0.9rem;
       font-weight: 600;
       color: #4a69bd;
-      margin: 0 0 10px 0;
-      padding-bottom: 8px;
-      border-bottom: 1px solid rgba(74,105,189,0.3);
-    }
-
-    .salvos-destinations-toolbar {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    .salvos-destinations-toolbar .btn-small {
-      padding: 4px 10px;
-      font-size: 0.75rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
     }
 
     .salvos-destinations-list {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 1px;
       overflow-y: auto;
       flex: 1;
+      padding: 4px 0;
     }
 
     .salvo-dest-row {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 6px 10px;
-      background: rgba(255,255,255,0.03);
-      border-radius: 4px;
+      gap: 8px;
+      padding: 5px 12px;
       cursor: pointer;
       user-select: none;
       transition: background 0.15s;
     }
-    .salvo-dest-row:hover { background: rgba(255,255,255,0.08); }
-    .salvo-dest-row.selected { background: rgba(74,105,189,0.3); }
-    .salvo-dest-row input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
-    .salvo-dest-row .dest-number { width: 30px; font-size: 0.8rem; color: #666; text-align: right; }
-    .salvo-dest-row .dest-label { flex: 1; font-size: 0.85rem; color: #ff6b6b; }
-    .salvo-dest-row .dest-source { font-size: 0.8rem; color: #2ed573; }
+    .salvo-dest-row:hover { background: rgba(255,255,255,0.05); }
+    .salvo-dest-row.selected { background: rgba(74,105,189,0.2); }
+    .salvo-dest-row input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
+    .salvo-dest-row .dest-number { width: 24px; font-size: 0.75rem; color: #666; text-align: right; flex-shrink: 0; }
+    .salvo-dest-row .dest-label { flex: 1; font-size: 0.85rem; color: #ff6b6b; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .salvo-dest-row .dest-source { font-size: 0.8rem; color: #2ed573; flex-shrink: 0; }
 
     .salvos-list {
       flex: 1;
       overflow-y: auto;
+      padding: 8px;
     }
 
     .salvo-card {
-      background: rgba(0,0,0,0.2);
-      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
       border-radius: 6px;
       margin-bottom: 8px;
       overflow: hidden;
+      transition: background 0.2s;
     }
+    .salvo-card:hover { background: rgba(255,255,255,0.06); }
 
     .salvo-card-header {
       display: flex;
@@ -868,7 +940,6 @@
       padding: 10px 14px;
       cursor: pointer;
     }
-    .salvo-card-header:hover { background: rgba(255,255,255,0.05); }
 
     .salvo-card-name { font-weight: 500; font-size: 0.9rem; }
     .salvo-card-info { font-size: 0.75rem; color: #888; }
@@ -881,7 +952,7 @@
     .salvo-card-body {
       display: none;
       padding: 10px 14px;
-      border-top: 1px solid rgba(255,255,255,0.1);
+      border-top: 1px solid rgba(255,255,255,0.08);
       font-size: 0.8rem;
     }
     .salvo-card.expanded .salvo-card-body { display: block; }
@@ -1011,15 +1082,18 @@
       <div class="header-left">
         <h1>Tie-Line Manager</h1>
       </div>
-      <div class="header-status">
-        <div class="router-status" id="statusA">
-          <span class="status-dot" id="statusDotA"></span>
-          <span id="statusTextA">Router A: Disconnected</span>
+      <div class="header-right">
+        <div class="header-status">
+          <div class="router-status" id="statusA">
+            <span class="status-dot" id="statusDotA"></span>
+            <span id="statusTextA">Router A: Disconnected</span>
+          </div>
+          <div class="router-status" id="statusB">
+            <span class="status-dot" id="statusDotB"></span>
+            <span id="statusTextB">Router B: Disconnected</span>
+          </div>
         </div>
-        <div class="router-status" id="statusB">
-          <span class="status-dot" id="statusDotB"></span>
-          <span id="statusTextB">Router B: Disconnected</span>
-        </div>
+        <img src="../icons/company-logo.png" alt="" class="header-logo">
       </div>
     </div>
 
@@ -1174,7 +1248,6 @@
             <span class="tieline-status-count" id="btoaCount">0/0</span>
             <span class="tieline-status-detail" id="btoaDetail"></span>
           </div>
-          <button class="btn-release-tl" id="releaseAllTieLines" title="Release all tie-lines back to free state">Release All</button>
         </div>
       </div>
     </div>
@@ -1185,14 +1258,19 @@
         <div class="labels-toolbar">
           <button class="btn btn-small btn-primary" id="labelsImportBtn">Import CSV</button>
           <button class="btn btn-small btn-primary" id="labelsExportBtn">Export CSV</button>
+          <div class="separator"></div>
+          <button class="btn btn-small" id="selectAllInputsBtn" style="background:rgba(255,255,255,0.1);color:#ccc;">Select All Inputs</button>
+          <button class="btn btn-small" id="selectAllOutputsBtn" style="background:rgba(255,255,255,0.1);color:#ccc;">Select All Outputs</button>
+          <span class="selection-count" id="labelSelectionCount"></span>
+          <span class="selection-hint">Cmd+Click to multi-select, Right-click for options</span>
         </div>
         <div class="labels-columns">
           <div class="label-column">
-            <div class="label-column-header">Inputs (Sources)</div>
+            <div class="label-column-header">Input Labels</div>
             <div class="label-list" id="inputLabelList"></div>
           </div>
           <div class="label-column">
-            <div class="label-column-header">Outputs (Destinations)</div>
+            <div class="label-column-header">Output Labels</div>
             <div class="label-list" id="outputLabelList"></div>
           </div>
         </div>
@@ -1215,15 +1293,17 @@
         </div>
         <div class="salvos-columns">
           <div class="salvos-destinations-column">
-            <h3 class="salvos-column-header">Select Destinations</h3>
-            <div class="salvos-destinations-toolbar">
-              <button class="btn btn-small" id="selectAllDestsBtn" style="background:rgba(255,255,255,0.1);color:#ccc;">Select All</button>
-              <button class="btn btn-small" id="selectNoneDestsBtn" style="background:rgba(255,255,255,0.1);color:#ccc;">Select None</button>
+            <div class="salvos-destinations-header">
+              Select Destinations
+              <div class="salvos-destinations-header-buttons">
+                <button class="btn btn-small" id="selectAllDestsBtn" style="background:rgba(255,255,255,0.1);color:#ccc;">All</button>
+                <button class="btn btn-small" id="selectNoneDestsBtn" style="background:rgba(255,255,255,0.1);color:#ccc;">None</button>
+              </div>
             </div>
             <div class="salvos-destinations-list" id="salvosDestinationsList"></div>
           </div>
           <div class="salvos-list-column">
-            <h3 class="salvos-column-header">Saved Salvos</h3>
+            <div class="salvos-list-header">Saved Salvos</div>
             <div class="salvos-list" id="salvosList">
               <div class="salvo-empty" id="salvosEmpty">No salvos captured yet</div>
             </div>
@@ -1544,6 +1624,83 @@
     // ===========================================
     // XY GRID
     // ===========================================
+    function canUpdateIncrementally(prev, next) {
+      // Can only do incremental if grid structure hasn't changed
+      return prev && next
+        && prev.inputs === next.inputs
+        && prev.outputs === next.outputs;
+    }
+
+    function updateXYGridIncremental(prev, next) {
+      const grid = document.getElementById('xyGrid');
+      if (!grid || !grid.querySelector('tbody')) return renderXYGrid();
+
+      const { outputs, inputs, routing, outputLocks, inputLabels, outputLabels,
+              inputRouterMap, outputRouterMap } = next;
+
+      // Update routing crosspoints
+      for (let o = 0; o < outputs; o++) {
+        if (prev.routing[o] !== next.routing[o]) {
+          const oRouter = outputRouterMap[o] || 'A';
+          // Remove old active
+          if (prev.routing[o] !== undefined) {
+            const oldCell = grid.querySelector(`td[data-output="${o}"][data-input="${prev.routing[o]}"]`);
+            if (oldCell) {
+              oldCell.classList.remove('active', 'active-cross');
+            }
+          }
+          // Add new active
+          if (next.routing[o] !== undefined) {
+            const newCell = grid.querySelector(`td[data-output="${o}"][data-input="${next.routing[o]}"]`);
+            if (newCell) {
+              const iRouter = inputRouterMap[next.routing[o]] || 'A';
+              newCell.classList.add(oRouter !== iRouter ? 'active-cross' : 'active');
+            }
+          }
+        }
+
+        // Update lock state
+        const prevLock = prev.outputLocks?.[o] || 'U';
+        const nextLock = next.outputLocks?.[o] || 'U';
+        if (prevLock !== nextLock) {
+          const lockBtn = grid.querySelector(`.xy-lock-btn[data-output="${o}"]`);
+          if (lockBtn) {
+            const isLocked = nextLock === 'O' || nextLock === 'L';
+            const isLockedByOther = nextLock === 'L';
+            lockBtn.className = `xy-lock-btn ${isLocked ? (isLockedByOther ? 'locked-other' : 'locked') : ''}`;
+            lockBtn.innerHTML = isLocked ? LOCK_ICON_LOCKED : LOCK_ICON_UNLOCKED;
+            // Update locked class on crosspoints for this row
+            const rowCells = grid.querySelectorAll(`td[data-output="${o}"][data-input]`);
+            rowCells.forEach(cell => cell.classList.toggle('locked', isLocked));
+          }
+        }
+      }
+
+      // Update labels if changed
+      for (let i = 0; i < inputs; i++) {
+        if (prev.inputLabels[i] !== next.inputLabels[i]) {
+          const header = grid.querySelector(`th.input-header[data-input="${i}"] .header-text`);
+          if (header) {
+            header.textContent = next.inputLabels[i] || `Input ${i + 1}`;
+            header.title = next.inputLabels[i] || `Input ${i + 1}`;
+          }
+        }
+      }
+      for (let o = 0; o < outputs; o++) {
+        if (prev.outputLabels[o] !== next.outputLabels[o]) {
+          const header = grid.querySelector(`th.output-header[data-output="${o}"] .header-text`);
+          if (header) {
+            header.textContent = next.outputLabels[o] || `Output ${o + 1}`;
+            header.title = next.outputLabels[o] || `Output ${o + 1}`;
+          }
+        }
+      }
+
+      // Update salvo quick buttons + tie-line status
+      renderSalvoQuickButtons();
+      updateTieLineStatusBar();
+    }
+
     function renderXYGrid() {
       const grid = document.getElementById('xyGrid');
       if (!virtualState || virtualState.outputs === 0 || virtualState.inputs === 0) {
@@ -1570,7 +1727,7 @@
         const router = inputRouterMap[i] || 'A';
         const isSep = (i === routerAInputCount && routerBInputCount > 0);
         const label = inputLabels[i] || `Input ${i + 1}`;
-        html += `<th class="input-header router-${router.toLowerCase()}${isSep ? ' input-separator' : ''}">
+        html += `<th class="input-header router-${router.toLowerCase()}${isSep ? ' input-separator' : ''}" data-input="${i}">
           <span class="header-text" title="${label}">${label}</span></th>`;
       }
       html += '</tr></thead><tbody>';
@@ -1598,7 +1755,7 @@
         html += `<td class="output-index${isSep ? ' output-separator' : ''}">${physOutIdx}</td>`;
 
         // Output label header
-        html += `<th class="output-header router-${router.toLowerCase()}${isSep ? ' output-separator' : ''}">
+        html += `<th class="output-header router-${router.toLowerCase()}${isSep ? ' output-separator' : ''}" data-output="${o}">
             <span class="header-text" title="${label}">${label}</span></th>`;
 
         for (let i = 0; i < inputs; i++) {
@@ -1644,8 +1801,8 @@
       // Update tie-line status
       updateTieLineStatusBar();
 
-      // Update minimap
-      setTimeout(updateMinimap, 50);
+      // Update minimap after DOM paint
+      requestAnimationFrame(updateMinimap);
     }
 
     // XY grid click handler
@@ -1878,6 +2035,7 @@
       for (let i = 0; i < count; i++) {
         const router = routerMap[i] || 'A';
         const label = labels[i] || `${type === 'input' ? 'Input' : 'Output'} ${i + 1}`;
+        const defaultName = `${type === 'input' ? 'Input' : 'Output'} ${i + 1}`;
 
         const item = document.createElement('div');
         item.className = 'label-item' + (selectedLabelItems.has(`${type}-${i}`) ? ' selected' : '');
@@ -1886,9 +2044,29 @@
         item.innerHTML = `
           <span class="label-index">${i + 1}</span>
           <span class="label-router-tag tag-${router.toLowerCase()}">${router}</span>
+          <span class="label-name">${escapeHtml(defaultName)}</span>
           <input type="text" value="${escapeHtml(label)}" data-type="${type}" data-index="${i}">
         `;
         container.appendChild(item);
+      }
+
+      // Update selection count
+      updateLabelSelectionCount();
+    }
+
+    function updateLabelSelectionCount() {
+      const countEl = document.getElementById('labelSelectionCount');
+      if (!countEl) return;
+      const count = selectedLabelItems.size;
+      if (count > 0) {
+        const inputCount = Array.from(selectedLabelItems).filter(k => k.startsWith('input-')).length;
+        const outputCount = Array.from(selectedLabelItems).filter(k => k.startsWith('output-')).length;
+        const parts = [];
+        if (inputCount > 0) parts.push(`${inputCount} input${inputCount > 1 ? 's' : ''}`);
+        if (outputCount > 0) parts.push(`${outputCount} output${outputCount > 1 ? 's' : ''}`);
+        countEl.textContent = parts.join(', ') + ' selected';
+      } else {
+        countEl.textContent = '';
       }
     }
 
@@ -2386,12 +2564,6 @@
       document.getElementById('addTieLineAtoB').addEventListener('click', () => addTieLine('aToB'));
       document.getElementById('addTieLineBtoA').addEventListener('click', () => addTieLine('bToA'));
 
-      // Release all tie-lines
-      document.getElementById('releaseAllTieLines').addEventListener('click', async () => {
-        await api.releaseAllTieLines();
-        showToast('All tie-lines released', 'success');
-      });
-
       // Delegate tie-line remove clicks
       document.addEventListener('click', (e) => {
         const removeBtn = e.target.closest('.remove-btn');
@@ -2450,6 +2622,25 @@
         document.removeEventListener('mouseup', onDocumentMouseUp);
       }
 
+      // Row/column header highlighting on hover
+      xyGrid.addEventListener('mouseover', (e) => {
+        const cell = e.target.closest('td[data-output][data-input]');
+        if (!cell || isDragging) return;
+        const inputHeader = xyGrid.querySelector(`th.input-header[data-input="${cell.dataset.input}"]`);
+        const outputHeader = xyGrid.querySelector(`th.output-header[data-output="${cell.dataset.output}"]`);
+        if (inputHeader) inputHeader.classList.add('highlight');
+        if (outputHeader) outputHeader.classList.add('highlight');
+      });
+
+      xyGrid.addEventListener('mouseout', (e) => {
+        const cell = e.target.closest('td[data-output][data-input]');
+        if (!cell || isDragging) return;
+        const inputHeader = xyGrid.querySelector(`th.input-header[data-input="${cell.dataset.input}"]`);
+        const outputHeader = xyGrid.querySelector(`th.output-header[data-output="${cell.dataset.output}"]`);
+        if (inputHeader) inputHeader.classList.remove('highlight');
+        if (outputHeader) outputHeader.classList.remove('highlight');
+      });
+
       xyGrid.addEventListener('mousedown', (e) => {
         const td = e.target.closest('td[data-output][data-input]');
         if (!td) return;
@@ -2457,6 +2648,7 @@
         dragStart = { output: parseInt(td.dataset.output), input: parseInt(td.dataset.input) };
         lastDragEnd = dragStart;
         isDragging = true;
+        xyGrid.querySelectorAll('.input-header.highlight, .output-header.highlight').forEach(el => el.classList.remove('highlight'));
         updateDragPreview(dragStart, dragStart);
         document.addEventListener('mousemove', onDocumentMouseMove);
         document.addEventListener('mouseup', onDocumentMouseUp);
@@ -2505,6 +2697,22 @@
         }
         // Close context menu on other right-clicks
         document.getElementById('contextMenu').classList.remove('visible');
+      });
+
+      // Labels - select all inputs / outputs
+      document.getElementById('selectAllInputsBtn').addEventListener('click', () => {
+        selectedLabelItems.clear();
+        for (let i = 0; i < (virtualState.inputs || 0); i++) {
+          selectedLabelItems.add(`input-${i}`);
+        }
+        renderLabels();
+      });
+      document.getElementById('selectAllOutputsBtn').addEventListener('click', () => {
+        selectedLabelItems.clear();
+        for (let i = 0; i < (virtualState.outputs || 0); i++) {
+          selectedLabelItems.add(`output-${i}`);
+        }
+        renderLabels();
       });
 
       // Labels - selection
@@ -2622,9 +2830,10 @@
       api.onRouterAError((err) => {
         showToast(`Router A: ${err}`, 'error');
       });
-      api.onRouterARoutingChanged(() => onStateChange());
-      api.onRouterAInputLabelsChanged(() => onStateChange());
-      api.onRouterAOutputLabelsChanged(() => onStateChange());
+      // Routing/label changes are handled via virtual-state-updated from main process
+      api.onRouterARoutingChanged(() => {});
+      api.onRouterAInputLabelsChanged(() => {});
+      api.onRouterAOutputLabelsChanged(() => {});
 
       // Router B
       api.onRouterBConnected((state) => {
@@ -2645,14 +2854,23 @@
       api.onRouterBError((err) => {
         showToast(`Router B: ${err}`, 'error');
       });
-      api.onRouterBRoutingChanged(() => onStateChange());
-      api.onRouterBInputLabelsChanged(() => onStateChange());
-      api.onRouterBOutputLabelsChanged(() => onStateChange());
+      // Routing/label changes are handled via virtual-state-updated from main process
+      api.onRouterBRoutingChanged(() => {});
+      api.onRouterBInputLabelsChanged(() => {});
+      api.onRouterBOutputLabelsChanged(() => {});
 
       // Virtual state
       api.onVirtualStateUpdated((state) => {
+        const prev = virtualState;
         virtualState = state;
-        if (activeTab === 'xy') { renderXYGrid(); updateMinimap(); }
+        if (activeTab === 'xy') {
+          if (prev && canUpdateIncrementally(prev, state)) {
+            updateXYGridIncremental(prev, state);
+          } else {
+            renderXYGrid();
+          }
+          updateMinimap();
+        }
         else if (activeTab === 'labels') renderLabels();
         else if (activeTab === 'salvos') renderSalvoDestinations();
       });
