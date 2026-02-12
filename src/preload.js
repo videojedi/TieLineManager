@@ -30,6 +30,7 @@ contextBridge.exposeInMainWorld('tieLineManager', {
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
   setAutoConnect: (enabled) => ipcRenderer.invoke('set-auto-connect', enabled),
   setAutoReconnect: (enabled) => ipcRenderer.invoke('set-auto-reconnect', enabled),
+  setAutoProtect: (enabled) => ipcRenderer.invoke('set-auto-protect', enabled),
 
   // Salvos
   getSalvos: () => ipcRenderer.invoke('get-salvos'),

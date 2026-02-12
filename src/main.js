@@ -92,6 +92,7 @@ function loadSettings() {
       salvos: [],
       autoConnect: false,
       autoReconnect: true,
+      autoProtect: false,
       activeLevel: 0,
       activeTab: 'setup'
     };
@@ -450,6 +451,12 @@ function setupIPC() {
 
   ipcMain.handle('set-auto-reconnect', (event, enabled) => {
     settings.autoReconnect = enabled;
+    saveSettings();
+    return { success: true };
+  });
+
+  ipcMain.handle('set-auto-protect', (event, enabled) => {
+    settings.autoProtect = enabled;
     saveSettings();
     return { success: true };
   });

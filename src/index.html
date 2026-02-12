@@ -328,6 +328,111 @@
     }
     .salvo-quick-btn:hover { background: rgba(74,105,189,0.6); color: #fff; }
 
+    /* Protect toggle switch */
+    .protect-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 120px;
+      padding: 3px 10px 3px 4px;
+      border: 1px solid rgba(76, 175, 80, 0.5);
+      border-radius: 20px;
+      background: rgba(76, 175, 80, 0.08);
+      cursor: pointer;
+      transition: all 0.3s;
+      user-select: none;
+    }
+    .protect-toggle .toggle-track {
+      width: 32px;
+      height: 18px;
+      background: #4caf50;
+      border-radius: 9px;
+      position: relative;
+      transition: background 0.3s;
+      flex-shrink: 0;
+    }
+    .protect-toggle .toggle-thumb {
+      width: 14px;
+      height: 14px;
+      background: #fff;
+      border-radius: 50%;
+      position: absolute;
+      top: 2px;
+      left: 16px;
+      transition: all 0.3s;
+    }
+    .protect-toggle .toggle-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #4caf50;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      transition: color 0.3s;
+      width: 56px;
+      text-align: center;
+    }
+    .protect-toggle:hover { border-color: rgba(76, 175, 80, 0.8); }
+
+    .protect-toggle.armed {
+      border-color: rgba(255, 80, 80, 0.7);
+      background: rgba(255, 80, 80, 0.08);
+    }
+    .protect-toggle.armed .toggle-track {
+      background: #e04040;
+    }
+    .protect-toggle.armed .toggle-thumb {
+      left: 2px;
+    }
+    .protect-toggle.armed .toggle-label {
+      color: #e04040;
+    }
+    .protect-toggle.armed:hover {
+      border-color: rgba(255, 80, 80, 0.9);
+      background: rgba(255, 80, 80, 0.12);
+    }
+
+    /* Toolbar action buttons (undo) */
+    .xy-toolbar-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 3px;
+      color: #999;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .xy-toolbar-btn svg { fill: currentColor; flex-shrink: 0; }
+    .xy-toolbar-btn:hover { background: rgba(255,255,255,0.15); color: #ddd; }
+    .xy-toolbar-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .xy-toolbar-btn:disabled:hover { background: rgba(255,255,255,0.08); color: #999; }
+
+    .xy-toolbar .toolbar-separator {
+      width: 1px;
+      height: 24px;
+      background: rgba(255,255,255,0.15);
+      margin: 0 2px;
+    }
+
+    /* Protected grid dimming */
+    .xy-grid-container .xy-grid td,
+    .xy-grid-container .xy-grid th:not(.corner-cell) {
+      transition: opacity 0.4s ease-in-out, filter 0.4s ease-in-out;
+    }
+    .xy-grid-container.protected .xy-grid td,
+    .xy-grid-container.protected .xy-grid th:not(.corner-cell) {
+      opacity: 0.5;
+      filter: grayscale(100%);
+      pointer-events: none;
+    }
+    .xy-grid-container.protected .xy-grid td {
+      cursor: not-allowed;
+    }
+
     .xy-grid-container {
       flex: 1;
       overflow: auto;
@@ -1253,13 +1358,17 @@
         <!-- Settings -->
         <div class="settings-section">
           <h3>Settings</h3>
-          <div class="checkbox-group">
+          <div class="checkbox-group" title="Automatically connect to both routers when the application starts">
             <input type="checkbox" id="autoConnect">
             <label for="autoConnect">Auto-connect on launch</label>
           </div>
-          <div class="checkbox-group">
+          <div class="checkbox-group" title="Automatically attempt to reconnect if a router connection is lost">
             <input type="checkbox" id="autoReconnect" checked>
             <label for="autoReconnect">Auto-reconnect on disconnect</label>
+          </div>
+          <div class="checkbox-group" title="Start with routing disabled on the XY page, and re-disable after 5 minutes of inactivity">
+            <input type="checkbox" id="autoProtect">
+            <label for="autoProtect">Auto-protect on XY page</label>
           </div>
         </div>
       </div>
@@ -1273,6 +1382,15 @@
             <label>Level:</label>
             <select id="levelSelect"></select>
           </div>
+          <div class="protect-toggle" id="xyProtectBtn" title="Routing enabled — click to protect">
+            <div class="toggle-track"><div class="toggle-thumb"></div></div>
+            <span class="toggle-label">Enabled</span>
+          </div>
+          <button class="xy-toolbar-btn" id="xyUndoBtn" title="Undo last route change" disabled>
+            <svg viewBox="0 0 24 24" width="14" height="14"><path d="M12.5 8c-2.65 0-5.05 1.04-6.83 2.73L2 7.07V16h8.93l-3.71-3.71C8.74 11.07 10.53 10.25 12.5 10.25c3.59 0 6.6 2.38 7.6 5.65l2.37-.78C21.12 11.23 17.17 8 12.5 8z"/></svg>
+            <span>Undo</span>
+          </button>
+          <div class="toolbar-separator"></div>
           <div class="toolbar-label">Salvos:</div>
           <div class="salvo-quick-buttons" id="salvoQuickButtons">
             <span style="font-size:0.75rem; color:#666">No salvos</span>
@@ -1401,6 +1519,11 @@
     // XY state
     let dragStart = null;
     let isDragging = false;
+    let xyProtectMode = false;
+    let autoProtectTimer = null;
+    const AUTO_PROTECT_DELAY = 5 * 60 * 1000; // 5 minutes
+    const UNDO_HISTORY_MAX = 50;
+    let undoHistory = [];
 
     // Label state
     let selectedLabelItems = new Set();
@@ -1434,6 +1557,12 @@
 
       document.getElementById('autoConnect').checked = settings.autoConnect || false;
       document.getElementById('autoReconnect').checked = settings.autoReconnect !== false;
+      document.getElementById('autoProtect').checked = settings.autoProtect || false;
+
+      // Enable protect mode by default if auto-protect is on
+      if (settings.autoProtect) {
+        setProtectMode(true);
+      }
 
       updateProtocolUI('A');
       updateProtocolUI('B');
@@ -1887,16 +2016,29 @@
 
     // XY grid click handler
     async function handleCellClick(output, input) {
+      // Check if protect mode is active
+      if (xyProtectMode) {
+        showToast('Routing is disabled', 'error');
+        return;
+      }
       // Check if output is locked
       const lockState = virtualState?.outputLocks?.[output] || 'U';
       if (lockState === 'O' || lockState === 'L') {
         showToast('Output is locked', 'error');
         return;
       }
+      // Capture previous state for undo
+      const previousInput = virtualState?.routing?.[output];
+      if (previousInput === input) return; // No change
+
       const result = await api.setVirtualRoute(output, input, activeLevel);
       if (!result.success) {
         showToast(result.error, 'error');
+        return;
       }
+      // Record successful route change in undo history
+      pushUndoEntry({ output, previousInput, newInput: input });
+      resetAutoProtectTimer();
     }
 
     // Drag-to-route helpers
@@ -1935,6 +2077,93 @@
         const o = oStart + (r < oCount ? r * oStep : (oCount - 1) * oStep);
         const i = iStart + (r < iCount ? r * iStep : (iCount - 1) * iStep);
         await handleCellClick(o, i);
+      }
+    }
+
+    // ===========================================
+    // PROTECT MODE
+    // ===========================================
+    function setProtectMode(enabled) {
+      xyProtectMode = enabled;
+      const toggle = document.getElementById('xyProtectBtn');
+      if (toggle) {
+        toggle.classList.toggle('armed', xyProtectMode);
+        toggle.querySelector('.toggle-label').textContent = xyProtectMode ? 'Disabled' : 'Enabled';
+        toggle.title = xyProtectMode
+          ? 'Routing is disabled \u2014 click to enable'
+          : 'Routing enabled \u2014 click to protect';
+      }
+      document.getElementById('xyGridContainer')?.classList.toggle('protected', xyProtectMode);
+    }
+
+    function resetAutoProtectTimer() {
+      if (autoProtectTimer) clearTimeout(autoProtectTimer);
+      if (settings.autoProtect && !xyProtectMode) {
+        autoProtectTimer = setTimeout(() => {
+          setProtectMode(true);
+          showToast('Routing disabled after inactivity', 'info');
+        }, AUTO_PROTECT_DELAY);
+      }
+    }
+
+    // ===========================================
+    // UNDO HISTORY
+    // ===========================================
+    function pushUndoEntry(entry) {
+      undoHistory.push({ ...entry, timestamp: Date.now() });
+      if (undoHistory.length > UNDO_HISTORY_MAX) {
+        undoHistory.shift();
+      }
+      updateUndoButton();
+    }
+
+    function updateUndoButton() {
+      const btn = document.getElementById('xyUndoBtn');
+      if (!btn) return;
+      const hasHistory = undoHistory.length > 0;
+      btn.disabled = !hasHistory;
+      const modKey = navigator.platform.includes('Mac') ? 'Cmd' : 'Ctrl';
+      if (hasHistory) {
+        const last = undoHistory[undoHistory.length - 1];
+        const outLabel = virtualState?.outputLabels?.[last.output] || `Output ${last.output + 1}`;
+        const prevLabel = last.previousInput !== undefined
+          ? (virtualState?.inputLabels?.[last.previousInput] || `Input ${last.previousInput + 1}`)
+          : 'None';
+        btn.title = `Undo: restore ${outLabel} \u2192 ${prevLabel} (${modKey}+Z)`;
+      } else {
+        btn.title = `Undo last route change (${modKey}+Z)`;
+      }
+    }
+
+    async function performUndo() {
+      if (undoHistory.length === 0) return;
+      if (xyProtectMode) {
+        showToast('Routing is disabled', 'error');
+        return;
+      }
+
+      const entry = undoHistory.pop();
+      updateUndoButton();
+
+      const lockState = virtualState?.outputLocks?.[entry.output] || 'U';
+      if (lockState === 'O' || lockState === 'L') {
+        showToast('Cannot undo: output is locked', 'error');
+        return;
+      }
+
+      if (entry.previousInput === undefined || entry.previousInput === null) {
+        showToast('Cannot undo: no previous route to restore', 'error');
+        return;
+      }
+
+      const result = await api.setVirtualRoute(entry.output, entry.previousInput, activeLevel);
+      if (result.success) {
+        const outLabel = virtualState?.outputLabels?.[entry.output] || `Output ${entry.output + 1}`;
+        const inLabel = virtualState?.inputLabels?.[entry.previousInput] || `Input ${entry.previousInput + 1}`;
+        showToast(`Undone: ${outLabel} \u2192 ${inLabel}`, 'info');
+        resetAutoProtectTimer();
+      } else {
+        showToast(`Undo failed: ${result.error}`, 'error');
       }
     }
 
@@ -2552,6 +2781,10 @@
     }
 
     async function recallSalvo(salvoId) {
+      if (xyProtectMode) {
+        showToast('Routing is disabled', 'error');
+        return;
+      }
       const salvo = salvos.find(s => s.id === salvoId);
       const result = await api.recallSalvo(salvoId);
       if (result.success) {
@@ -2659,6 +2892,17 @@
       document.getElementById('autoReconnect').addEventListener('change', (e) => {
         api.setAutoReconnect(e.target.checked);
       });
+      document.getElementById('autoProtect').addEventListener('change', (e) => {
+        api.setAutoProtect(e.target.checked);
+        settings.autoProtect = e.target.checked;
+        if (e.target.checked) {
+          setProtectMode(true);
+          showToast('Auto-protect enabled', 'info');
+        } else {
+          if (autoProtectTimer) clearTimeout(autoProtectTimer);
+          autoProtectTimer = null;
+        }
+      });
 
       // XY Grid interactions
       const xyGrid = document.getElementById('xyGrid');
@@ -2724,6 +2968,7 @@
       xyGrid.addEventListener('mousedown', (e) => {
         const td = e.target.closest('td[data-output][data-input]');
         if (!td) return;
+        if (xyProtectMode) return;
         e.preventDefault();
         dragStart = { output: parseInt(td.dataset.output), input: parseInt(td.dataset.input) };
         lastDragEnd = dragStart;
@@ -2885,6 +3130,32 @@
           updateMinimap();
         }
       });
+
+      // Protect mode toggle
+      document.getElementById('xyProtectBtn').addEventListener('click', () => {
+        setProtectMode(!xyProtectMode);
+        if (xyProtectMode) {
+          showToast('Routing disabled', 'info');
+          if (autoProtectTimer) clearTimeout(autoProtectTimer);
+        } else {
+          showToast('Routing enabled', 'info');
+          resetAutoProtectTimer();
+        }
+      });
+
+      // Undo button
+      document.getElementById('xyUndoBtn').addEventListener('click', performUndo);
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+          if (activeTab !== 'xy') return;
+          const tag = document.activeElement?.tagName;
+          if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+          e.preventDefault();
+          performUndo();
+        }
+      });
     }
 
     // ===========================================
@@ -2902,6 +3173,8 @@
         routerAConnected = false;
         routerAState = null;
         setConnectionStatus('A', 'disconnected', 'Disconnected');
+        undoHistory = [];
+        updateUndoButton();
         onStateChange();
       });
       api.onRouterAReconnecting((attempt) => {
@@ -2926,6 +3199,8 @@
         routerBConnected = false;
         routerBState = null;
         setConnectionStatus('B', 'disconnected', 'Disconnected');
+        undoHistory = [];
+        updateUndoButton();
         onStateChange();
       });
       api.onRouterBReconnecting((attempt) => {
