@@ -30,6 +30,7 @@
     .header-left { display: flex; align-items: center; gap: 15px; }
 
     .header h1 { font-size: 1.3rem; font-weight: 600; color: #fff; }
+    .header h1 .version-badge { font-size: 0.6rem; font-weight: 400; color: #666; vertical-align: middle; margin-left: 6px; letter-spacing: 0.3px; }
 
     .header-right {
       display: flex;
@@ -44,7 +45,7 @@
     }
 
     .header-logo {
-      height: 24px;
+      height: 32px;
       opacity: 0.7;
     }
 
@@ -1231,7 +1232,7 @@
     <!-- Header -->
     <div class="header">
       <div class="header-left">
-        <h1>Tie-Line Manager</h1>
+        <h1>Tie-Line Manager <span class="version-badge" id="versionBadge"></span></h1>
       </div>
       <div class="header-right">
         <div class="header-status">
@@ -1588,6 +1589,11 @@
           if (settings.routerB?.host) connectRouter('B');
         }, 500);
       }
+
+      // Show version in header
+      api.getVersion().then(v => {
+        document.getElementById('versionBadge').textContent = `v${v}`;
+      });
 
       // Check for updates after a short delay
       setTimeout(checkForUpdates, 2000);
@@ -2796,6 +2802,9 @@
     }
 
     async function deleteSalvo(salvoId) {
+      const salvo = salvos.find(s => s.id === salvoId);
+      const name = salvo ? salvo.name : 'this salvo';
+      if (!confirm(`Delete "${name}"?`)) return;
       const result = await api.deleteSalvo(salvoId);
       if (result.success) {
         salvos = result.salvos;

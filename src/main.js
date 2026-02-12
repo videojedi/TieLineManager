@@ -678,6 +678,9 @@ function setupIPC() {
     return { success: true, count: added, salvos: settings.salvos };
   });
 
+  // App info
+  ipcMain.handle('get-version', () => app.getVersion());
+
   // Update checker
   ipcMain.handle('check-for-updates', async () => {
     try {

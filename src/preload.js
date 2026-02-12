@@ -42,6 +42,9 @@ contextBridge.exposeInMainWorld('tieLineManager', {
   importSalvos: () => ipcRenderer.invoke('import-salvos'),
   importSalvosResolve: (imported, resolution) => ipcRenderer.invoke('import-salvos-resolve', imported, resolution),
 
+  // App info
+  getVersion: () => ipcRenderer.invoke('get-version'),
+
   // Update checker
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
 
