@@ -446,6 +446,7 @@
     .xy-grid-wrapper {
       display: inline-block;
       min-width: 100%;
+      position: relative;
     }
 
     .xy-grid {
@@ -614,6 +615,30 @@
     }
     .xy-grid td.locked:hover {
       background: transparent;
+    }
+
+    /* No tie-lines zone (cross-router cells with no tie-lines configured) */
+    .xy-grid td.no-tielines {
+      background: rgba(0,0,0,0.3);
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+    .xy-grid td.no-tielines:hover {
+      background: rgba(0,0,0,0.3);
+    }
+
+    /* Overlay label for no-tieline zones */
+    .no-tielines-overlay {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 2;
+      color: rgba(255,255,255,0.25);
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
     }
 
     /* Highlight row/col */
@@ -2005,6 +2030,10 @@
               inputPhysicalIndices, outputPhysicalIndices,
               routerAInputCount, routerBInputCount, routerAOutputCount, routerBOutputCount } = virtualState;
 
+      // Check if tie-lines exist in each direction
+      const hasAtoBTieLines = (tieLineConfig.aToB || []).length > 0;
+      const hasBtoATieLines = (tieLineConfig.bToA || []).length > 0;
+
       // Header row 1: Input index numbers with minimap in corner (rowspan=2, colspan=3: lock + index + label)
       let html = '<thead><tr class="index-row"><th class="corner-cell" rowspan="2" colspan="3"><div class="xy-minimap" id="xyMinimap"><canvas id="xyMinimapCanvas"></canvas><div class="xy-minimap-viewport" id="xyMinimapViewport"></div></div></th>';
       for (let i = 0; i < inputs; i++) {
@@ -2058,10 +2087,15 @@
           const isCross = isActive && oRouter !== iRouter;
           const isInSep = (i === routerAInputCount && routerBInputCount > 0);
 
+          // Check if this is a cross-router cell with no tie-lines
+          const isNoTieLines = (oRouter === 'A' && iRouter === 'B' && !hasAtoBTieLines)
+                            || (oRouter === 'B' && iRouter === 'A' && !hasBtoATieLines);
+
           let classes = '';
-          if (isActive) classes += isCross ? ' active-cross' : ' active';
+          if (isNoTieLines) classes += ' no-tielines';
+          else if (isActive) classes += isCross ? ' active-cross' : ' active';
           if (isInSep) classes += ' input-separator';
-          if (isLocked) classes += ' locked';
+          if (isLocked && !isNoTieLines) classes += ' locked';
 
           html += `<td class="${classes.trim()}" data-output="${o}" data-input="${i}"></td>`;
         }
@@ -2070,6 +2104,45 @@
 
       html += '</tbody>';
       grid.innerHTML = html;
+
+      // Add "No tie-lines" overlay labels on disabled quadrants
+      requestAnimationFrame(() => {
+        // Remove any existing overlays
+        document.querySelectorAll('.no-tielines-overlay').forEach(el => el.remove());
+        const wrapper = grid.closest('.xy-grid-wrapper');
+        if (!wrapper) return;
+
+        const addOverlay = (oStart, oEnd, iStart, iEnd, label) => {
+          const topLeft = grid.querySelector(`td[data-output="${oStart}"][data-input="${iStart}"]`);
+          const botRight = grid.querySelector(`td[data-output="${oEnd}"][data-input="${iEnd}"]`);
+          if (!topLeft || !botRight) return;
+          const wRect = wrapper.getBoundingClientRect();
+          const tlRect = topLeft.getBoundingClientRect();
+          const brRect = botRight.getBoundingClientRect();
+          const w = brRect.right - tlRect.left;
+          const h = brRect.bottom - tlRect.top;
+          const overlay = document.createElement('div');
+          overlay.className = 'no-tielines-overlay';
+          overlay.textContent = label;
+          overlay.style.left = (tlRect.left - wRect.left) + 'px';
+          overlay.style.top = (tlRect.top - wRect.top) + 'px';
+          overlay.style.width = w + 'px';
+          overlay.style.height = h + 'px';
+          // Scale font size to fit the quadrant
+          const fontSize = Math.max(11, Math.min(28, Math.min(w / 8, h / 2.5)));
+          overlay.style.fontSize = fontSize + 'px';
+          wrapper.appendChild(overlay);
+        };
+
+        // A outputs × B inputs (top-right quadrant): needs A→B tie-lines
+        if (!hasAtoBTieLines && routerAOutputCount > 0 && routerBInputCount > 0) {
+          addOverlay(0, routerAOutputCount - 1, routerAInputCount, inputs - 1, 'No A\u2192B tie-lines');
+        }
+        // B outputs × A inputs (bottom-left quadrant): needs B→A tie-lines
+        if (!hasBtoATieLines && routerBOutputCount > 0 && routerAInputCount > 0) {
+          addOverlay(routerAOutputCount, outputs - 1, 0, routerAInputCount - 1, 'No B\u2192A tie-lines');
+        }
+      });
 
       // Lock button event listeners
       grid.querySelectorAll('.xy-lock-btn').forEach(btn => {
@@ -2104,6 +2177,17 @@
       if (xyProtectMode) {
         showToast('Routing is disabled', 'error');
         return;
+      }
+      // Check if this is a cross-router route with no tie-lines
+      const oRouter = virtualState?.outputRouterMap?.[output] || 'A';
+      const iRouter = virtualState?.inputRouterMap?.[input] || 'A';
+      if (oRouter !== iRouter) {
+        const hasNeededTieLines = (oRouter === 'A' && iRouter === 'B') ? (tieLineConfig.aToB || []).length > 0
+                                : (tieLineConfig.bToA || []).length > 0;
+        if (!hasNeededTieLines) {
+          showToast(`No ${oRouter}\u2192${iRouter} tie-lines configured`, 'error');
+          return;
+        }
       }
       // Check if output is locked
       const lockState = virtualState?.outputLocks?.[output] || 'U';
@@ -3137,6 +3221,7 @@
         const td = e.target.closest('td[data-output][data-input]');
         if (!td) return;
         if (xyProtectMode) return;
+        if (td.classList.contains('no-tielines')) return;
         e.preventDefault();
         dragStart = { output: parseInt(td.dataset.output), input: parseInt(td.dataset.input) };
         lastDragEnd = dragStart;

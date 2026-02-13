@@ -263,12 +263,14 @@ class TieLineEngine extends EventEmitter {
     this.emit('state-changed', this.state);
   }
 
-  // Update tie-line input labels on the receiving router to show the source being carried
+  // Update tie-line labels on both the source output and receiving input ports
   updateTieLineLabels() {
-    // A→B tie-lines: update Router B input label
+    // A→B tie-lines: update Router A output label + Router B input label
     for (let i = 0; i < this.state.aToB.length; i++) {
       const tl = this.state.aToB[i];
       const tlNum = i + 1;
+      // Label the source output on Router A
+      if (this.controllerA?.isConnected()) this.controllerA.setOutputLabel(tl.routerAOutput, `TL${tlNum} A>B`);
       if (tl.status === 'in-use' && tl.sourceInput !== null) {
         const stateA = this.controllerA?.isConnected() ? this.controllerA.getState() : null;
         const sourceName = stateA?.inputLabels?.[tl.sourceInput];
@@ -279,10 +281,12 @@ class TieLineEngine extends EventEmitter {
       }
     }
 
-    // B→A tie-lines: update Router A input label
+    // B→A tie-lines: update Router B output label + Router A input label
     for (let i = 0; i < this.state.bToA.length; i++) {
       const tl = this.state.bToA[i];
       const tlNum = i + 1;
+      // Label the source output on Router B
+      if (this.controllerB?.isConnected()) this.controllerB.setOutputLabel(tl.routerBOutput, `TL${tlNum} B>A`);
       if (tl.status === 'in-use' && tl.sourceInput !== null) {
         const stateB = this.controllerB?.isConnected() ? this.controllerB.getState() : null;
         const sourceName = stateB?.inputLabels?.[tl.sourceInput];
