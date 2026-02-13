@@ -36,6 +36,8 @@ contextBridge.exposeInMainWorld('tieLineManager', {
   getSalvos: () => ipcRenderer.invoke('get-salvos'),
   saveSalvo: (salvo) => ipcRenderer.invoke('save-salvo', salvo),
   deleteSalvo: (salvoId) => ipcRenderer.invoke('delete-salvo', salvoId),
+  reorderSalvos: (orderedIds) => ipcRenderer.invoke('reorder-salvos', orderedIds),
+  setSalvoColor: (salvoId, color) => ipcRenderer.invoke('set-salvo-color', salvoId, color),
   recallSalvo: (salvoId) => ipcRenderer.invoke('recall-salvo', salvoId),
   captureSalvo: (name, selectedOutputs) => ipcRenderer.invoke('capture-salvo', name, selectedOutputs),
   exportSalvos: () => ipcRenderer.invoke('export-salvos'),

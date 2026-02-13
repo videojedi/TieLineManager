@@ -1035,19 +1035,89 @@
       border-radius: 6px;
       margin-bottom: 8px;
       overflow: hidden;
-      transition: background 0.2s;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.15s;
+      border-left: 3px solid transparent;
     }
     .salvo-card:hover { background: rgba(255,255,255,0.06); }
+    .salvo-card.dragging { opacity: 0.5; transform: scale(0.98); }
+    .salvo-card.drag-over { box-shadow: 0 -2px 0 0 #4a69bd; }
+
+    .salvo-drag-handle {
+      cursor: grab;
+      color: #555;
+      font-size: 1rem;
+      line-height: 1;
+      letter-spacing: -2px;
+      padding: 2px 4px;
+      user-select: none;
+      transition: color 0.2s;
+    }
+    .salvo-drag-handle:hover { color: #999; }
+    .salvo-drag-handle:active { cursor: grabbing; }
+
+    .salvo-color-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.2);
+      transition: transform 0.15s;
+    }
+    .salvo-color-dot:hover { transform: scale(1.3); }
+
+    .salvo-color-picker {
+      display: none;
+      gap: 4px;
+      padding: 6px 10px;
+      background: rgba(0,0,0,0.4);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .salvo-color-picker.visible { display: flex; }
+
+    .salvo-color-swatch {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+    .salvo-color-swatch:hover { transform: scale(1.2); }
+    .salvo-color-swatch.active { border-color: #fff; }
+
+    .salvo-color-clear {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.3);
+      background: transparent;
+      position: relative;
+      transition: transform 0.15s;
+    }
+    .salvo-color-clear:hover { transform: scale(1.2); }
+    .salvo-color-clear::after {
+      content: '×';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      color: #888;
+      font-size: 12px;
+      line-height: 1;
+    }
 
     .salvo-card-header {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 8px;
       padding: 10px 14px;
       cursor: pointer;
     }
 
-    .salvo-card-name { font-weight: 500; font-size: 0.9rem; }
+    .salvo-card-name { font-weight: 500; font-size: 0.9rem; flex: 1; }
     .salvo-card-info { font-size: 0.75rem; color: #888; }
 
     .salvo-card-actions {
@@ -1065,7 +1135,6 @@
 
     .salvo-route-row {
       display: flex;
-      justify-content: space-between;
       padding: 3px 0;
       color: #aaa;
     }
@@ -1073,6 +1142,15 @@
     .salvo-route-row .route-arrow { color: #666; margin: 0 6px; }
     .salvo-route-row .route-input { color: #e0e0e0; }
     .salvo-route-row .route-cross { color: #a273eb; font-size: 0.7rem; margin-left: 6px; }
+
+    .salvo-disclosure {
+      font-size: 0.65rem;
+      color: #666;
+      transition: transform 0.2s;
+      margin-left: auto;
+      padding: 0 4px;
+    }
+    .salvo-card.expanded .salvo-disclosure { transform: rotate(90deg); }
 
     .salvo-empty {
       padding: 30px;
@@ -2112,6 +2190,11 @@
       }
     }
 
+    // Reset auto-protect timer on any user activity
+    ['mousemove', 'mousedown', 'keydown', 'wheel', 'touchstart'].forEach(evt => {
+      document.addEventListener(evt, () => resetAutoProtectTimer(), { passive: true });
+    });
+
     // ===========================================
     // UNDO HISTORY
     // ===========================================
@@ -2699,6 +2782,17 @@
       }
     }
 
+    const SALVO_COLORS = [
+      { name: 'Red', value: '#e74c3c' },
+      { name: 'Orange', value: '#e67e22' },
+      { name: 'Yellow', value: '#f1c40f' },
+      { name: 'Green', value: '#2ecc71' },
+      { name: 'Blue', value: '#3498db' },
+      { name: 'Purple', value: '#9b59b6' },
+      { name: 'Pink', value: '#e84393' },
+      { name: 'Cyan', value: '#00cec9' },
+    ];
+
     function renderSalvos() {
       const salvosList = document.getElementById('salvosList');
       const salvosEmpty = document.getElementById('salvosEmpty');
@@ -2718,20 +2812,36 @@
         const card = document.createElement('div');
         card.className = 'salvo-card';
         card.dataset.id = salvo.id;
+        card.draggable = true;
+        if (salvo.color) {
+          card.style.borderLeftColor = salvo.color;
+        }
 
         const crossRoutes = salvo.routes.filter(r => r.outputRouter !== r.inputRouter).length;
-        const infoText = `${salvo.routes.length} routes${crossRoutes > 0 ? `, ${crossRoutes} cross-router` : ''}`;
+        const date = new Date(salvo.createdAt).toLocaleDateString();
+        const infoText = `${salvo.routes.length} routes${crossRoutes > 0 ? `, ${crossRoutes} cross-router` : ''} | ${date}`;
+
+        const colorSwatches = SALVO_COLORS.map(c =>
+          `<span class="salvo-color-swatch${salvo.color === c.value ? ' active' : ''}" style="background:${c.value}" data-color="${c.value}" data-salvo-id="${salvo.id}" title="${c.name}"></span>`
+        ).join('');
 
         card.innerHTML = `
           <div class="salvo-card-header">
-            <div>
+            <span class="salvo-drag-handle" title="Drag to reorder">⋮⋮</span>
+            <span class="salvo-color-dot" style="background:${salvo.color || '#555'}" data-salvo-id="${salvo.id}" title="Click to change color"></span>
+            <div style="flex:1">
               <div class="salvo-card-name">${escapeHtml(salvo.name)}</div>
               <div class="salvo-card-info">${infoText}</div>
             </div>
+            <span class="salvo-disclosure">▶</span>
             <div class="salvo-card-actions">
               <button class="btn btn-small btn-success salvo-recall-btn" data-id="${salvo.id}">Recall</button>
               <button class="btn btn-small btn-danger salvo-delete-btn" data-id="${salvo.id}">Delete</button>
             </div>
+          </div>
+          <div class="salvo-color-picker" data-salvo-id="${salvo.id}">
+            ${colorSwatches}
+            <span class="salvo-color-clear" data-salvo-id="${salvo.id}" title="No color"></span>
           </div>
           <div class="salvo-card-body">
             ${salvo.routes.map(r => {
@@ -2745,6 +2855,50 @@
             }).join('')}
           </div>
         `;
+
+        // Drag-and-drop reorder
+        card.addEventListener('dragstart', (e) => {
+          card.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', salvo.id);
+        });
+        card.addEventListener('dragend', () => {
+          card.classList.remove('dragging');
+          salvosList.querySelectorAll('.salvo-card').forEach(c => c.classList.remove('drag-over'));
+        });
+        card.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          const dragging = salvosList.querySelector('.salvo-card.dragging');
+          if (dragging && dragging !== card) {
+            card.classList.add('drag-over');
+          }
+        });
+        card.addEventListener('dragleave', () => {
+          card.classList.remove('drag-over');
+        });
+        card.addEventListener('drop', async (e) => {
+          e.preventDefault();
+          card.classList.remove('drag-over');
+          const draggedId = e.dataTransfer.getData('text/plain');
+          if (draggedId === salvo.id) return;
+
+          const ids = salvos.map(s => s.id);
+          const fromIndex = ids.indexOf(draggedId);
+          const toIndex = ids.indexOf(salvo.id);
+          if (fromIndex < 0 || toIndex < 0) return;
+
+          ids.splice(fromIndex, 1);
+          ids.splice(toIndex, 0, draggedId);
+
+          const result = await api.reorderSalvos(ids);
+          if (result.success) {
+            salvos = result.salvos;
+            renderSalvos();
+            renderSalvoQuickButtons();
+          }
+        });
+
         salvosList.appendChild(card);
       }
     }
@@ -2763,6 +2917,11 @@
         btn.textContent = salvo.name;
         btn.title = `Recall: ${salvo.name}`;
         btn.dataset.id = salvo.id;
+        if (salvo.color) {
+          btn.style.borderColor = salvo.color;
+          btn.style.color = salvo.color;
+          btn.style.background = salvo.color + '20';
+        }
         btn.addEventListener('click', () => recallSalvo(salvo.id));
         container.appendChild(btn);
       }
@@ -3111,12 +3270,52 @@
       document.getElementById('importSalvosBtn').addEventListener('click', importSalvos);
 
       // Salvo card actions (delegated)
-      document.getElementById('salvosList').addEventListener('click', (e) => {
+      document.getElementById('salvosList').addEventListener('click', async (e) => {
         const recallBtn = e.target.closest('.salvo-recall-btn');
         if (recallBtn) { recallSalvo(recallBtn.dataset.id); return; }
 
         const deleteBtn = e.target.closest('.salvo-delete-btn');
         if (deleteBtn) { deleteSalvo(deleteBtn.dataset.id); return; }
+
+        // Color dot - toggle color picker
+        const colorDot = e.target.closest('.salvo-color-dot');
+        if (colorDot) {
+          const picker = colorDot.closest('.salvo-card').querySelector('.salvo-color-picker');
+          if (picker) {
+            document.querySelectorAll('.salvo-color-picker.visible').forEach(p => {
+              if (p !== picker) p.classList.remove('visible');
+            });
+            picker.classList.toggle('visible');
+          }
+          return;
+        }
+
+        // Color swatch - set color
+        const swatch = e.target.closest('.salvo-color-swatch');
+        if (swatch) {
+          const result = await api.setSalvoColor(swatch.dataset.salvoId, swatch.dataset.color);
+          if (result.success) {
+            salvos = result.salvos;
+            renderSalvos();
+            renderSalvoQuickButtons();
+          }
+          return;
+        }
+
+        // Color clear - remove color
+        const clearBtn = e.target.closest('.salvo-color-clear');
+        if (clearBtn) {
+          const result = await api.setSalvoColor(clearBtn.dataset.salvoId, null);
+          if (result.success) {
+            salvos = result.salvos;
+            renderSalvos();
+            renderSalvoQuickButtons();
+          }
+          return;
+        }
+
+        // Drag handle - don't expand
+        if (e.target.closest('.salvo-drag-handle')) return;
 
         const header = e.target.closest('.salvo-card-header');
         if (header && !e.target.closest('.salvo-card-actions')) {

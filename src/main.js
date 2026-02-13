@@ -493,6 +493,23 @@ function setupIPC() {
     return { success: true, salvos: settings.salvos };
   });
 
+  ipcMain.handle('reorder-salvos', (event, orderedIds) => {
+    if (!settings.salvos) return { success: false };
+    const ordered = orderedIds.map(id => settings.salvos.find(s => s.id === id)).filter(Boolean);
+    settings.salvos = ordered;
+    saveSettings();
+    return { success: true, salvos: settings.salvos };
+  });
+
+  ipcMain.handle('set-salvo-color', (event, salvoId, color) => {
+    if (!settings.salvos) return { success: false };
+    const salvo = settings.salvos.find(s => s.id === salvoId);
+    if (!salvo) return { success: false };
+    salvo.color = color || null;
+    saveSettings();
+    return { success: true, salvos: settings.salvos };
+  });
+
   ipcMain.handle('capture-salvo', (event, name, selectedOutputs) => {
     if (!virtualRouter) return { success: false, error: 'Not initialized' };
 
