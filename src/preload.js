@@ -32,6 +32,12 @@ contextBridge.exposeInMainWorld('tieLineManager', {
   setAutoReconnect: (enabled) => ipcRenderer.invoke('set-auto-reconnect', enabled),
   setAutoProtect: (enabled) => ipcRenderer.invoke('set-auto-protect', enabled),
 
+  // Remote Access (VideoHub Bridge)
+  startBridge: () => ipcRenderer.invoke('start-bridge'),
+  stopBridge: () => ipcRenderer.invoke('stop-bridge'),
+  getBridgeStatus: () => ipcRenderer.invoke('get-bridge-status'),
+  setRemoteAccessSettings: (settings) => ipcRenderer.invoke('set-remote-access-settings', settings),
+
   // Salvos
   getSalvos: () => ipcRenderer.invoke('get-salvos'),
   saveSalvo: (salvo) => ipcRenderer.invoke('save-salvo', salvo),
@@ -74,6 +80,12 @@ contextBridge.exposeInMainWorld('tieLineManager', {
   // Virtual state events
   onVirtualStateUpdated: (cb) => ipcRenderer.on('virtual-state-updated', (_, state) => cb(state)),
   onTieLineStateUpdated: (cb) => ipcRenderer.on('tie-line-state-updated', (_, state) => cb(state)),
+
+  // Bridge events
+  onBridgeStatusUpdated: (cb) => ipcRenderer.on('bridge-status-updated', (_, status) => cb(status)),
+  onBridgeClientConnected: (cb) => ipcRenderer.on('bridge-client-connected', (_, clientId) => cb(clientId)),
+  onBridgeClientDisconnected: (cb) => ipcRenderer.on('bridge-client-disconnected', (_, clientId) => cb(clientId)),
+  onBridgeError: (cb) => ipcRenderer.on('bridge-error', (_, err) => cb(err)),
 
   // Remove listeners
   removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel)

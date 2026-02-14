@@ -10,11 +10,14 @@ try { VideoHubController = require('./videohub-controller'); } catch (e) {}
 try { SWP08Controller = require('./swp08-controller'); } catch (e) {}
 try { GVNativeController = require('./gvnative-controller'); } catch (e) {}
 
+const VideoHubBridge = require('./videohub-bridge');
+
 let mainWindow;
 let controllerA = null;
 let controllerB = null;
 let tieLineEngine = null;
 let virtualRouter = null;
+let videohubBridge = null;
 let settings = {};
 
 // Check for updates against GitHub releases
@@ -102,6 +105,7 @@ function loadSettings() {
   if (!settings.salvos) settings.salvos = [];
   if (!settings.routerA) settings.routerA = { host: '127.0.0.1', port: 9990, protocol: 'videohub', levels: 1, name: 'Router A' };
   if (!settings.routerB) settings.routerB = { host: '127.0.0.1', port: 9991, protocol: 'videohub', levels: 1, name: 'Router B' };
+  if (!settings.remoteAccess) settings.remoteAccess = { enabled: false, port: 9990, autoStart: false, friendlyName: 'TieLineManager Virtual Router' };
 }
 
 function saveSettings() {
@@ -214,6 +218,17 @@ function rebuildVirtualState() {
 
   sendToRenderer('virtual-state-updated', virtualRouter.getState());
   sendToRenderer('tie-line-state-updated', tieLineEngine?.getState() || { aToB: [], bToA: [] });
+
+  // Notify TCP bridge of state change
+  if (videohubBridge?.getStatus().running) {
+    videohubBridge.onVirtualStateChanged(virtualRouter.getState());
+  }
+
+  // Auto-start bridge if enabled and both routers connected
+  if (settings.remoteAccess?.autoStart && controllerA?.isConnected() && controllerB?.isConnected()
+      && videohubBridge && !videohubBridge.getStatus().running) {
+    startBridge();
+  }
 }
 
 function ensureEngine() {
@@ -222,6 +237,59 @@ function ensureEngine() {
     tieLineEngine.on('state-changed', () => {
       sendToRenderer('tie-line-state-updated', tieLineEngine.getState());
     });
+  }
+}
+
+// VideoHub Bridge (Remote Access)
+function createBridge() {
+  if (videohubBridge) return;
+
+  videohubBridge = new VideoHubBridge({
+    port: settings.remoteAccess?.port || 9990,
+    friendlyName: settings.remoteAccess?.friendlyName || 'TieLineManager Virtual Router'
+  });
+
+  videohubBridge.setDependencies({ virtualRouter, tieLineEngine, controllerA, controllerB });
+
+  videohubBridge.on('client-connected', (clientId) => {
+    sendToRenderer('bridge-client-connected', clientId);
+    sendToRenderer('bridge-status-updated', videohubBridge.getStatus());
+  });
+
+  videohubBridge.on('client-disconnected', (clientId) => {
+    sendToRenderer('bridge-client-disconnected', clientId);
+    sendToRenderer('bridge-status-updated', videohubBridge.getStatus());
+  });
+
+  videohubBridge.on('error', (err) => {
+    sendToRenderer('bridge-error', err.message || String(err));
+  });
+}
+
+async function startBridge() {
+  if (!virtualRouter) return { success: false, error: 'Virtual router not initialized' };
+  if (!videohubBridge) createBridge();
+
+  videohubBridge.setDependencies({ virtualRouter, tieLineEngine, controllerA, controllerB });
+
+  try {
+    await videohubBridge.start();
+    sendToRenderer('bridge-status-updated', videohubBridge.getStatus());
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+async function stopBridge() {
+  if (!videohubBridge) return { success: true };
+
+  try {
+    await videohubBridge.stop();
+    sendToRenderer('bridge-status-updated', videohubBridge.getStatus());
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
   }
 }
 
@@ -297,6 +365,10 @@ function setupIPC() {
       ensureEngine();
       tieLineEngine.controllerA = controllerA;
       tieLineEngine.controllerB = controllerB;
+
+      if (videohubBridge) {
+        videohubBridge.setDependencies({ virtualRouter, tieLineEngine, controllerA, controllerB });
+      }
 
       await controller.connect();
       return { success: true };
@@ -457,6 +529,25 @@ function setupIPC() {
 
   ipcMain.handle('set-auto-protect', (event, enabled) => {
     settings.autoProtect = enabled;
+    saveSettings();
+    return { success: true };
+  });
+
+  // VideoHub Bridge (Remote Access)
+  ipcMain.handle('start-bridge', async () => {
+    return startBridge();
+  });
+
+  ipcMain.handle('stop-bridge', async () => {
+    return stopBridge();
+  });
+
+  ipcMain.handle('get-bridge-status', () => {
+    return videohubBridge?.getStatus() || { running: false, port: settings.remoteAccess?.port || 9990, clientCount: 0, clients: [] };
+  });
+
+  ipcMain.handle('set-remote-access-settings', (event, raSettings) => {
+    settings.remoteAccess = { ...settings.remoteAccess, ...raSettings };
     saveSettings();
     return { success: true };
   });
@@ -876,12 +967,18 @@ app.whenReady().then(async () => {
   ensureEngine();
   virtualRouter = new VirtualRouter(null, null, settings.tieLines, tieLineEngine.getState());
 
+  // Initialize bridge if remote access enabled
+  if (settings.remoteAccess?.enabled || settings.remoteAccess?.autoStart) {
+    createBridge();
+  }
+
   // Create window
   createWindow();
 });
 
 app.on('window-all-closed', () => {
-  // Disconnect controllers on quit
+  // Stop bridge and disconnect controllers on quit
+  if (videohubBridge) { videohubBridge.stop().catch(() => {}); }
   if (controllerA) { controllerA.removeAllListeners(); controllerA.disconnect().catch(() => {}); }
   if (controllerB) { controllerB.removeAllListeners(); controllerB.disconnect().catch(() => {}); }
   if (process.platform !== 'darwin') app.quit();

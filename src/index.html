@@ -280,6 +280,48 @@
 
     .settings-section h3 { font-size: 1rem; margin-bottom: 15px; }
 
+    /* Remote Access section */
+    .remote-access-section {
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+      padding: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+      margin-top: 20px;
+    }
+    .remote-access-section h3 {
+      font-size: 1rem;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .bridge-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      margin-top: 10px;
+    }
+    .bridge-status.running {
+      background: rgba(46,213,115,0.15);
+      color: #2ed573;
+    }
+    .bridge-status.stopped {
+      background: rgba(255,255,255,0.05);
+      color: #888;
+    }
+    .bridge-clients {
+      margin-top: 8px;
+      font-size: 0.8rem;
+      color: #888;
+    }
+    .bridge-client-item {
+      padding: 3px 0;
+      color: #aaa;
+    }
+
     /* ============ XY TAB ============ */
     .xy-content {
       flex: 1;
@@ -1475,6 +1517,35 @@
             <label for="autoProtect">Auto-protect on XY page</label>
           </div>
         </div>
+
+        <!-- Remote Access -->
+        <div class="remote-access-section">
+          <h3>
+            <span>Remote Access</span>
+            <span style="font-size:0.75rem; color:#888;">VideoHub Protocol</span>
+          </h3>
+          <p style="font-size:0.8rem; color:#888; margin-bottom:12px;">
+            Expose the virtual router over TCP so external devices can connect and control routing using the Blackmagic VideoHub protocol.
+          </p>
+          <div class="config-group">
+            <label>Port</label>
+            <input type="number" id="bridgePort" class="config-input" value="9990" min="1" max="65535" style="width:100px">
+          </div>
+          <div class="config-group">
+            <label>Device Name</label>
+            <input type="text" id="bridgeFriendlyName" class="config-input" value="TieLineManager Virtual Router" placeholder="Name visible to clients">
+          </div>
+          <div class="checkbox-group" title="Automatically start the server when both routers are connected">
+            <input type="checkbox" id="bridgeAutoStart">
+            <label for="bridgeAutoStart">Auto-start when both routers connected</label>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:12px">
+            <button class="btn btn-success" id="startBridgeBtn">Start Server</button>
+            <button class="btn btn-danger" id="stopBridgeBtn" disabled>Stop Server</button>
+          </div>
+          <div class="bridge-status stopped" id="bridgeStatus">Server stopped</div>
+          <div class="bridge-clients" id="bridgeClients"></div>
+        </div>
       </div>
     </div>
 
@@ -1663,6 +1734,14 @@
       document.getElementById('autoReconnect').checked = settings.autoReconnect !== false;
       document.getElementById('autoProtect').checked = settings.autoProtect || false;
 
+      // Remote Access settings
+      if (settings.remoteAccess) {
+        document.getElementById('bridgePort').value = settings.remoteAccess.port || 9990;
+        document.getElementById('bridgeFriendlyName').value = settings.remoteAccess.friendlyName || 'TieLineManager Virtual Router';
+        document.getElementById('bridgeAutoStart').checked = settings.remoteAccess.autoStart || false;
+      }
+      updateBridgeStatus();
+
       // Enable protect mode by default if auto-protect is on
       if (settings.autoProtect) {
         setProtectMode(true);
@@ -1792,7 +1871,7 @@
       connStatus.textContent = text;
 
       connectBtn.disabled = status === 'connected' || status === 'connecting';
-      disconnectBtn.disabled = status !== 'connected';
+      disconnectBtn.disabled = status === 'disconnected';
 
       if (routerId === 'A') routerAConnected = status === 'connected';
       else routerBConnected = status === 'connected';
@@ -2245,6 +2324,38 @@
         const o = oStart + (r < oCount ? r * oStep : (oCount - 1) * oStep);
         const i = iStart + (r < iCount ? r * iStep : (iCount - 1) * iStep);
         await handleCellClick(o, i);
+      }
+    }
+
+    // ===========================================
+    // REMOTE ACCESS (BRIDGE)
+    // ===========================================
+    async function updateBridgeStatus() {
+      const status = await api.getBridgeStatus();
+      const statusEl = document.getElementById('bridgeStatus');
+      const clientsEl = document.getElementById('bridgeClients');
+      const startBtn = document.getElementById('startBridgeBtn');
+      const stopBtn = document.getElementById('stopBridgeBtn');
+
+      if (status.running) {
+        statusEl.className = 'bridge-status running';
+        statusEl.textContent = `Server running on port ${status.port} \u2014 ${status.clientCount} client${status.clientCount !== 1 ? 's' : ''} connected`;
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+
+        if (status.clients && status.clients.length > 0) {
+          clientsEl.innerHTML = status.clients
+            .map(c => `<div class="bridge-client-item">${c}</div>`)
+            .join('');
+        } else {
+          clientsEl.innerHTML = '';
+        }
+      } else {
+        statusEl.className = 'bridge-status stopped';
+        statusEl.textContent = 'Server stopped';
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        clientsEl.innerHTML = '';
       }
     }
 
@@ -3156,6 +3267,37 @@
         }
       });
 
+      // Remote Access
+      document.getElementById('startBridgeBtn').addEventListener('click', async () => {
+        await api.setRemoteAccessSettings({
+          enabled: true,
+          port: parseInt(document.getElementById('bridgePort').value) || 9990,
+          friendlyName: document.getElementById('bridgeFriendlyName').value || 'TieLineManager Virtual Router',
+          autoStart: document.getElementById('bridgeAutoStart').checked
+        });
+        const result = await api.startBridge();
+        if (result.success) {
+          showToast('VideoHub server started', 'success');
+        } else {
+          showToast(`Failed to start: ${result.error}`, 'error');
+        }
+        updateBridgeStatus();
+      });
+
+      document.getElementById('stopBridgeBtn').addEventListener('click', async () => {
+        await api.stopBridge();
+        showToast('VideoHub server stopped', 'info');
+        updateBridgeStatus();
+      });
+
+      document.getElementById('bridgeAutoStart').addEventListener('change', (e) => {
+        api.setRemoteAccessSettings({
+          autoStart: e.target.checked,
+          port: parseInt(document.getElementById('bridgePort').value) || 9990,
+          friendlyName: document.getElementById('bridgeFriendlyName').value
+        });
+      });
+
       // XY Grid interactions
       const xyGrid = document.getElementById('xyGrid');
       let lastDragEnd = null;
@@ -3528,6 +3670,15 @@
         tieLineState = state;
         updateTieLineStatusBar();
       });
+
+      // Bridge events
+      api.onBridgeStatusUpdated(() => updateBridgeStatus());
+      api.onBridgeClientConnected((clientId) => {
+        showToast(`Client connected: ${clientId}`, 'info');
+        updateBridgeStatus();
+      });
+      api.onBridgeClientDisconnected(() => updateBridgeStatus());
+      api.onBridgeError((err) => showToast(`Bridge error: ${err}`, 'error'));
     }
 
     async function onStateChange() {
