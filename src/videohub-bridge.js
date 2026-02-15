@@ -9,7 +9,7 @@ class VideoHubBridge extends EventEmitter {
     this.friendlyName = options.friendlyName || 'TieLineManager Virtual Router';
     this.protocolVersion = '2.8';
 
-    // TCP client lock ownership (output index -> socket)
+    // TCP client lock ownership (output index -> IP string)
     this.lockOwners = {};
 
     this.clients = new Set();
@@ -33,6 +33,13 @@ class VideoHubBridge extends EventEmitter {
   _getVirtualState() {
     if (!this.virtualRouter) return null;
     return this.virtualRouter.getState();
+  }
+
+  _getClientIP(socket) {
+    let addr = socket.remoteAddress || '';
+    addr = addr.replace(/^::ffff:/, '');
+    if (addr === '::1') addr = '127.0.0.1';
+    return addr;
   }
 
   start() {
@@ -100,32 +107,7 @@ class VideoHubBridge extends EventEmitter {
 
     socket.on('close', () => {
       this.clients.delete(socket);
-
-      // Release TCP client locks and unlock on physical routers
-      const changes = [];
-      const vs = this._getVirtualState();
-      const totalOutputs = vs ? vs.outputs : 0;
-
-      for (let i = 0; i < totalOutputs; i++) {
-        if (this.lockOwners[i] === socket) {
-          this.lockOwners[i] = null;
-          changes.push({ output: i });
-          // Unlock on physical router
-          const resolved = this.virtualRouter?.resolveOutput(i);
-          if (resolved) {
-            const controller = resolved.router === 'A' ? this.controllerA : this.controllerB;
-            if (controller?.isConnected()) {
-              try { controller.setLock(resolved.physicalIndex, 'U'); } catch (e) {}
-            }
-          }
-        }
-      }
-
-      if (changes.length > 0) {
-        this.broadcastLockChange(changes);
-        this.emit('locks-changed', changes.map(c => ({ output: c.output, lock: 'U' })));
-      }
-
+      // IP-based locks persist across disconnections (matches real hardware)
       this.emit('client-disconnected', clientId);
     });
 
@@ -174,8 +156,9 @@ class VideoHubBridge extends EventEmitter {
 
           if (output < 0 || output >= vs.outputs || input < 0 || input >= vs.inputs) continue;
 
-          // Check TCP client lock
-          if (this.lockOwners[output] && this.lockOwners[output] !== socket) continue;
+          // Check TCP client lock (IP-based)
+          const routeClientIP = this._getClientIP(socket);
+          if (this.lockOwners[output] && this.lockOwners[output] !== routeClientIP) continue;
 
           // Check physical router lock
           const physLock = vs.outputLocks?.[output] || 'U';
@@ -224,8 +207,9 @@ class VideoHubBridge extends EventEmitter {
 
           if (output < 0 || output >= vs.outputs) continue;
 
+          const lockClientIP = this._getClientIP(socket);
           if (lockState === 'O') {
-            this.lockOwners[output] = socket;
+            this.lockOwners[output] = lockClientIP;
             // Forward to physical router
             const resolved = this.virtualRouter.resolveOutput(output);
             if (resolved) {
@@ -234,9 +218,9 @@ class VideoHubBridge extends EventEmitter {
                 try { controller.setLock(resolved.physicalIndex, 'O'); } catch (e) {}
               }
             }
-            changes.push({ output, socket });
+            changes.push({ output });
           } else if (lockState === 'U') {
-            if (!this.lockOwners[output] || this.lockOwners[output] === socket) {
+            if (!this.lockOwners[output] || this.lockOwners[output] === lockClientIP) {
               this.lockOwners[output] = null;
               const resolved = this.virtualRouter.resolveOutput(output);
               if (resolved) {
@@ -245,7 +229,7 @@ class VideoHubBridge extends EventEmitter {
                   try { controller.setLock(resolved.physicalIndex, 'U'); } catch (e) {}
                 }
               }
-              changes.push({ output, socket });
+              changes.push({ output });
             }
           } else if (lockState === 'F') {
             this.lockOwners[output] = null;
@@ -256,7 +240,7 @@ class VideoHubBridge extends EventEmitter {
                 try { controller.setLock(resolved.physicalIndex, 'U'); } catch (e) {}
               }
             }
-            changes.push({ output, socket });
+            changes.push({ output });
           }
         }
       }
@@ -413,7 +397,8 @@ class VideoHubBridge extends EventEmitter {
   _getLockStateForClient(socket, output, vs) {
     const tcpOwner = this.lockOwners[output];
     if (tcpOwner) {
-      return tcpOwner === socket ? 'O' : 'L';
+      const clientIP = this._getClientIP(socket);
+      return tcpOwner === clientIP ? 'O' : 'L';
     }
     const physLock = vs?.outputLocks?.[output] || 'U';
     return physLock === 'U' ? 'U' : 'L';
