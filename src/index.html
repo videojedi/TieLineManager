@@ -2630,12 +2630,15 @@
         const label = labels[i] || `${type === 'input' ? 'Input' : 'Output'} ${i + 1}`;
         const defaultName = `${type === 'input' ? 'Input' : 'Output'} ${i + 1}`;
 
+        const physicalIndices = type === 'input' ? virtualState.inputPhysicalIndices : virtualState.outputPhysicalIndices;
+        const physIdx = physicalIndices?.[i] || (i + 1);
+
         const item = document.createElement('div');
         item.className = 'label-item' + (selectedLabelItems.has(`${type}-${i}`) ? ' selected' : '');
         item.dataset.type = type;
         item.dataset.index = i;
         item.innerHTML = `
-          <span class="label-index">${i + 1}</span>
+          <span class="label-index">${physIdx}</span>
           <span class="label-router-tag tag-${router.toLowerCase()}">${router}</span>
           <span class="label-name">${escapeHtml(defaultName)}</span>
           <input type="text" value="${escapeHtml(label)}" data-type="${type}" data-index="${i}">
@@ -2928,12 +2931,6 @@
         row.appendChild(tag);
         row.appendChild(labelEl);
         row.appendChild(source);
-
-        row.addEventListener('click', (e) => {
-          if (e.target.tagName !== 'INPUT') {
-            toggleDestinationSelection(o);
-          }
-        });
 
         destList.appendChild(row);
       }
@@ -3300,10 +3297,47 @@
 
       // XY Grid interactions
       const xyGrid = document.getElementById('xyGrid');
+      const gridContainer = document.getElementById('xyGridContainer');
       let lastDragEnd = null;
+      let autoScrollInterval = null;
+
+      function stopAutoScroll() {
+        if (autoScrollInterval) {
+          clearInterval(autoScrollInterval);
+          autoScrollInterval = null;
+        }
+      }
+
+      function startAutoScroll(scrollX, scrollY) {
+        stopAutoScroll();
+        if (scrollX === 0 && scrollY === 0) return;
+        autoScrollInterval = setInterval(() => {
+          gridContainer.scrollLeft += scrollX;
+          gridContainer.scrollTop += scrollY;
+        }, 16);
+      }
 
       function onDocumentMouseMove(e) {
         if (!isDragging) return;
+
+        const containerRect = gridContainer.getBoundingClientRect();
+        const edgeThreshold = 40;
+        const scrollSpeed = 8;
+        let scrollX = 0;
+        let scrollY = 0;
+
+        if (e.clientX < containerRect.left + edgeThreshold) {
+          scrollX = -scrollSpeed;
+        } else if (e.clientX > containerRect.right - edgeThreshold) {
+          scrollX = scrollSpeed;
+        }
+        if (e.clientY < containerRect.top + edgeThreshold) {
+          scrollY = -scrollSpeed;
+        } else if (e.clientY > containerRect.bottom - edgeThreshold) {
+          scrollY = scrollSpeed;
+        }
+        startAutoScroll(scrollX, scrollY);
+
         const el = document.elementFromPoint(e.clientX, e.clientY);
         if (el) {
           const cell = el.closest('td[data-output][data-input]');
@@ -3316,6 +3350,7 @@
 
       async function onDocumentMouseUp(e) {
         if (!isDragging) return;
+        stopAutoScroll();
         clearDragPreview();
 
         let dragEnd = null;
@@ -3435,10 +3470,79 @@
         renderLabels();
       });
 
-      // Labels - selection
+      // Labels - selection (click + drag)
+      let labelDrag = null; // { type, startIndex, didMove, container, scrollInterval }
+
+      function stopLabelAutoScroll() {
+        if (labelDrag?.scrollInterval) {
+          clearInterval(labelDrag.scrollInterval);
+          labelDrag.scrollInterval = null;
+        }
+      }
+
+      document.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return; // left click only
+        const item = e.target.closest('.label-item');
+        if (!item || e.target.matches('input')) return;
+        if (document.activeElement?.matches('input')) return; // text selection in progress
+        const type = item.dataset.type;
+        const index = parseInt(item.dataset.index);
+        const container = item.closest('.label-list');
+        e.preventDefault(); // prevent text selection during drag
+        labelDrag = { type, startIndex: index, didMove: false, container, scrollInterval: null };
+        if (!e.shiftKey && !e.metaKey && !e.ctrlKey) {
+          selectedLabelItems.clear();
+          selectedLabelItems.add(`${type}-${index}`);
+          lastSelectedLabel = { type, index };
+          renderLabels();
+        }
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!labelDrag) return;
+
+        // Auto-scroll when near edges of the label list container
+        const rect = labelDrag.container.getBoundingClientRect();
+        const edgeThreshold = 40;
+        const scrollSpeed = 8;
+        let scrollY = 0;
+        if (e.clientY < rect.top + edgeThreshold) scrollY = -scrollSpeed;
+        else if (e.clientY > rect.bottom - edgeThreshold) scrollY = scrollSpeed;
+
+        stopLabelAutoScroll();
+        if (scrollY !== 0) {
+          labelDrag.scrollInterval = setInterval(() => {
+            labelDrag.container.scrollTop += scrollY;
+          }, 16);
+        }
+
+        const el = document.elementFromPoint(e.clientX, e.clientY);
+        if (!el) return;
+        const item = el.closest('.label-item');
+        if (!item || item.dataset.type !== labelDrag.type) return;
+        const index = parseInt(item.dataset.index);
+        if (index === labelDrag.startIndex && !labelDrag.didMove) return;
+        labelDrag.didMove = true;
+        const from = Math.min(labelDrag.startIndex, index);
+        const to = Math.max(labelDrag.startIndex, index);
+        selectedLabelItems.clear();
+        for (let i = from; i <= to; i++) {
+          selectedLabelItems.add(`${labelDrag.type}-${i}`);
+        }
+        renderLabels();
+      });
+
+      document.addEventListener('mouseup', (e) => {
+        if (!labelDrag) return;
+        stopLabelAutoScroll();
+        const wasDrag = labelDrag.didMove;
+        labelDrag = null;
+        if (wasDrag) return; // drag handled selection already
+      });
+
       document.addEventListener('click', (e) => {
         const item = e.target.closest('.label-item');
-        if (item && !e.target.matches('input')) {
+        if (item && !e.target.matches('input') && !document.activeElement?.matches('input')) {
           const type = item.dataset.type;
           const index = parseInt(item.dataset.index);
           const key = `${type}-${index}`;
@@ -3453,11 +3557,8 @@
             if (selectedLabelItems.has(key)) selectedLabelItems.delete(key);
             else selectedLabelItems.add(key);
             lastSelectedLabel = { type, index };
-          } else {
-            selectedLabelItems.clear();
-            selectedLabelItems.add(key);
-            lastSelectedLabel = { type, index };
           }
+          // Plain click selection handled by mousedown
           renderLabels();
         }
       });
@@ -3495,6 +3596,91 @@
       });
       document.getElementById('exportSalvosBtn').addEventListener('click', exportSalvos);
       document.getElementById('importSalvosBtn').addEventListener('click', importSalvos);
+
+      // Salvo destinations - drag to select
+      {
+        const destList = document.getElementById('salvosDestinationsList');
+        let salvoDrag = null; // { startIndex, additive, baseSelection, scrollInterval }
+
+        function stopSalvoAutoScroll() {
+          if (salvoDrag?.scrollInterval) {
+            clearInterval(salvoDrag.scrollInterval);
+            salvoDrag.scrollInterval = null;
+          }
+        }
+
+        function updateSalvoSelectionRange(from, to) {
+          if (salvoDrag.additive) {
+            selectedOutputsForCapture = new Set(salvoDrag.baseSelection);
+          } else {
+            selectedOutputsForCapture.clear();
+          }
+          const lo = Math.min(from, to);
+          const hi = Math.max(from, to);
+          for (let i = lo; i <= hi; i++) {
+            selectedOutputsForCapture.add(i);
+          }
+          // Update row visuals without full re-render
+          destList.querySelectorAll('.salvo-dest-row').forEach(row => {
+            const o = parseInt(row.dataset.output);
+            const sel = selectedOutputsForCapture.has(o);
+            row.classList.toggle('selected', sel);
+            const cb = row.querySelector('input[type="checkbox"]');
+            if (cb) cb.checked = sel;
+          });
+          updateCaptureSelectionUI();
+        }
+
+        destList.addEventListener('mousedown', (e) => {
+          if (e.button !== 0) return;
+          const row = e.target.closest('.salvo-dest-row');
+          if (!row || e.target.matches('input[type="checkbox"]')) return;
+          e.preventDefault();
+          const index = parseInt(row.dataset.output);
+          const additive = e.metaKey || e.ctrlKey;
+          salvoDrag = {
+            startIndex: index,
+            didMove: false,
+            additive,
+            baseSelection: additive ? new Set(selectedOutputsForCapture) : new Set(),
+            scrollInterval: null
+          };
+          updateSalvoSelectionRange(index, index);
+        });
+
+        document.addEventListener('mousemove', (e) => {
+          if (!salvoDrag) return;
+
+          // Auto-scroll near edges
+          const rect = destList.getBoundingClientRect();
+          const edgeThreshold = 40;
+          const scrollSpeed = 8;
+          let scrollY = 0;
+          if (e.clientY < rect.top + edgeThreshold) scrollY = -scrollSpeed;
+          else if (e.clientY > rect.bottom - edgeThreshold) scrollY = scrollSpeed;
+
+          stopSalvoAutoScroll();
+          if (scrollY !== 0) {
+            salvoDrag.scrollInterval = setInterval(() => {
+              destList.scrollTop += scrollY;
+            }, 16);
+          }
+
+          const el = document.elementFromPoint(e.clientX, e.clientY);
+          if (!el) return;
+          const row = el.closest('.salvo-dest-row');
+          if (!row) return;
+          const index = parseInt(row.dataset.output);
+          if (index !== salvoDrag.startIndex) salvoDrag.didMove = true;
+          updateSalvoSelectionRange(salvoDrag.startIndex, index);
+        });
+
+        document.addEventListener('mouseup', (e) => {
+          if (!salvoDrag) return;
+          stopSalvoAutoScroll();
+          salvoDrag = null;
+        });
+      }
 
       // Salvo card actions (delegated)
       document.getElementById('salvosList').addEventListener('click', async (e) => {
@@ -3589,6 +3775,23 @@
           if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
           e.preventDefault();
           performUndo();
+        }
+
+        // Cmd+C / Cmd+V for label copy/paste (only when not in a text field)
+        if ((e.ctrlKey || e.metaKey) && activeTab === 'labels') {
+          const tag = document.activeElement?.tagName;
+          if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+          if (e.key === 'c' && selectedLabelItems.size > 0) {
+            e.preventDefault();
+            const type = Array.from(selectedLabelItems)[0].split('-')[0];
+            copyLabels(type);
+          } else if (e.key === 'v' && copiedLabels.length > 0 && selectedLabelItems.size > 0) {
+            e.preventDefault();
+            const type = Array.from(selectedLabelItems)[0].split('-')[0];
+            const indices = getSelectedIndicesForType(type);
+            if (indices.length > 0) pasteLabels(type, indices[0]);
+          }
         }
       });
     }

@@ -1,6 +1,6 @@
 {
   "name": "tie-line-manager",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "Connect two broadcast routers and manage tie-lines between them as one virtual router",
   "main": "src/main.js",
   "scripts": {
