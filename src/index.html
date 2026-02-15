@@ -466,14 +466,17 @@
     .xy-grid-container .xy-grid th:not(.corner-cell) {
       transition: opacity 0.4s ease-in-out, filter 0.4s ease-in-out;
     }
-    .xy-grid-container.protected .xy-grid td,
-    .xy-grid-container.protected .xy-grid th:not(.corner-cell) {
+    .xy-grid-container.protected .xy-grid td:not(.lock-cell):not(.output-index) {
       opacity: 0.5;
       filter: grayscale(100%);
       pointer-events: none;
-    }
-    .xy-grid-container.protected .xy-grid td {
       cursor: not-allowed;
+    }
+    .xy-grid-container.protected .xy-grid td.lock-cell,
+    .xy-grid-container.protected .xy-grid td.output-index,
+    .xy-grid-container.protected .xy-grid th:not(.corner-cell) {
+      filter: grayscale(100%);
+      pointer-events: none;
     }
 
     .xy-grid-container {
