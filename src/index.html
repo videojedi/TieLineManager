@@ -749,11 +749,11 @@
     .xy-lock-btn.force-unlocking::after {
       content: '';
       position: absolute;
-      bottom: 0;
+      top: 0;
       left: 0;
       height: 3px;
       background: #ff6b6b;
-      border-radius: 0 0 3px 3px;
+      border-radius: 3px 3px 0 0;
       animation: forceUnlockProgress 2s linear forwards;
     }
 
@@ -1992,9 +1992,22 @@
         const used = usedOuts.has(p);
         outOptions += `<option value="${p}"${used ? ' disabled' : ''}>${outLabel} ${p + 1}${used ? ' (used)' : ''}</option>`;
       }
-      // Pre-select first available
-      let firstAvailOut = 0;
-      while (usedOuts.has(firstAvailOut) && firstAvailOut < outCount) firstAvailOut++;
+      // Suggest next sequential port based on last tie-line entry
+      const existing = tieLineConfig[direction] || [];
+      let suggestOut = 0;
+      let suggestIn = 0;
+      if (existing.length > 0) {
+        const last = existing[existing.length - 1];
+        suggestOut = last[outKey] + 1;
+        suggestIn = last[inKey] + 1;
+      }
+      // Find next available from the suggested starting point
+      let firstAvailOut = suggestOut;
+      while (firstAvailOut < outCount && usedOuts.has(firstAvailOut)) firstAvailOut++;
+      if (firstAvailOut >= outCount) {
+        firstAvailOut = 0;
+        while (firstAvailOut < outCount && usedOuts.has(firstAvailOut)) firstAvailOut++;
+      }
 
       // Build input port select
       let inOptions = '';
@@ -2002,8 +2015,12 @@
         const used = usedIns.has(p);
         inOptions += `<option value="${p}"${used ? ' disabled' : ''}>${inLabel} ${p + 1}${used ? ' (used)' : ''}</option>`;
       }
-      let firstAvailIn = 0;
-      while (usedIns.has(firstAvailIn) && firstAvailIn < inCount) firstAvailIn++;
+      let firstAvailIn = suggestIn;
+      while (firstAvailIn < inCount && usedIns.has(firstAvailIn)) firstAvailIn++;
+      if (firstAvailIn >= inCount) {
+        firstAvailIn = 0;
+        while (firstAvailIn < inCount && usedIns.has(firstAvailIn)) firstAvailIn++;
+      }
 
       tr.innerHTML = `
         <td></td>
