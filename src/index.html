@@ -76,8 +76,13 @@
     /* Tabs */
     .tab-bar {
       display: flex;
+      align-items: center;
       background: rgba(0, 0, 0, 0.2);
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .tab-bar-left {
+      display: flex;
+      flex-shrink: 0;
     }
 
     .tab-btn {
@@ -133,6 +138,51 @@
       outline: none;
       border-color: #4a69bd;
     }
+    .host-input-group { display: flex; gap: 4px; }
+    .host-input-group input { flex: 1; }
+    .btn-history {
+      padding: 8px 10px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 4px;
+      background: rgba(0,0,0,0.3);
+      color: #aaa;
+      cursor: pointer;
+      font-size: 10px;
+    }
+    .btn-history:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .router-history-dropdown {
+      display: none;
+      position: absolute;
+      z-index: 100;
+      background: #1a1a2e;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 4px;
+      margin-top: 4px;
+      max-height: 250px;
+      overflow-y: auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      min-width: 280px;
+    }
+    .router-history-dropdown.visible { display: block; }
+    .router-history-item {
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .router-history-item:last-child { border-bottom: none; }
+    .router-history-item:hover { background: rgba(255,255,255,0.1); }
+    .router-history-item .router-info { flex: 1; }
+    .router-history-item .router-name { font-weight: 500; color: #fff; font-size: 0.85rem; }
+    .router-history-item .router-address { font-size: 0.75rem; color: #888; font-family: monospace; }
+    .router-history-item .router-protocol { font-size: 0.7rem; color: #4a69bd; text-transform: uppercase; }
+    .router-history-item .remove-btn {
+      padding: 4px 8px; border: none; background: transparent;
+      color: #888; cursor: pointer; font-size: 16px;
+    }
+    .router-history-item .remove-btn:hover { color: #ff6b6b; }
+    .router-history-empty { padding: 15px; text-align: center; color: #666; font-size: 0.85rem; }
 
     /* Checkbox */
     .checkbox-group {
@@ -587,8 +637,8 @@
     .xy-grid th.output-header.highlight .header-text { color: #fff; }
 
     /* Router color coding in headers */
-    .xy-grid th.router-a .header-text { color: #7baaf7; }
-    .xy-grid th.router-b .header-text { color: #f0a060; }
+    .xy-grid th.router-a .header-text { color: #fff; }
+    .xy-grid th.router-b .header-text { color: #fff; }
 
     /* Separator between router A and B sections */
     .xy-grid th.input-separator,
@@ -982,7 +1032,7 @@
       background: rgba(0,0,0,0.2);
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 3px;
-      color: #e0e0e0;
+      color: #fff;
       font-size: 0.85rem;
       flex-shrink: 0;
     }
@@ -1325,6 +1375,131 @@
       margin: 4px 0;
     }
 
+    .context-menu-colors {
+      display: flex;
+      gap: 3px;
+    }
+    .context-menu-color-swatch {
+      width: 14px; height: 14px; border-radius: 3px; cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .context-menu-color-swatch:hover { border-color: #fff; transform: scale(1.2); }
+
+    /* Label colour swatch */
+    .label-color-btn {
+      width: 20px; height: 20px; border-radius: 4px; flex-shrink: 0; cursor: pointer;
+      border: 2px solid rgba(255,255,255,0.2); background: transparent;
+    }
+    .label-color-btn:hover { border-color: rgba(255,255,255,0.5); }
+    .label-color-btn.has-color { border-color: rgba(255,255,255,0.4); }
+
+    /* Edit modal overlay (shared by salvo edit + BPS edit) */
+    .bps-edit-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7); z-index: 10000;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .bps-edit-dialog {
+      background: #2d3436; border-radius: 10px; padding: 20px;
+      min-width: 280px; max-width: 380px; color: #e0e0e0;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    .bps-edit-dialog h3 { margin: 0 0 16px; font-size: 1rem; }
+    .bps-edit-dialog label { display: block; font-size: 0.8rem; color: #b2bec3; margin-bottom: 6px; }
+    .bps-edit-dialog select {
+      width: 100%; padding: 6px 8px; margin-bottom: 12px;
+      border: 1px solid rgba(255,255,255,0.2); border-radius: 4px;
+      background: rgba(0,0,0,0.3); color: #e0e0e0; font-size: 0.85rem;
+    }
+    .bps-color-swatches { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+    .bps-color-swatch {
+      width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
+      border: 2px solid transparent; transition: border-color 0.15s, transform 0.15s;
+    }
+    .bps-color-swatch:hover { transform: scale(1.15); }
+    .bps-color-swatch.selected { border-color: #fff; }
+    .bps-color-swatch.no-color {
+      background: linear-gradient(135deg, #555 40%, #e74c3c 40%, #e74c3c 60%, #555 60%);
+    }
+    .bps-edit-buttons { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+    .bps-edit-buttons button {
+      padding: 6px 16px; border: none; border-radius: 4px; cursor: pointer;
+      font-size: 0.85rem; color: #fff;
+    }
+    .bps-save { background: #4a69bd; }
+    .bps-save:hover { background: #6a89cc; }
+    .bps-delete { background: #e74c3c; }
+    .bps-delete:hover { background: #ff6b6b; }
+    .bps-edit-buttons button:not(.bps-save):not(.bps-delete) { background: #636e72; }
+
+    /* BPS buttons (in tab bar) */
+    .bps-container {
+      display: flex; gap: 4px; align-items: center;
+      margin-left: auto; padding: 0 10px;
+      overflow-x: auto; overflow-y: hidden;
+      max-width: 60%; flex-shrink: 1; min-width: 0;
+      scrollbar-width: thin;
+    }
+    .bps-container::-webkit-scrollbar { height: 3px; }
+    .bps-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+    .bps-btn {
+      width: 32px; height: 32px; border-radius: 5px; flex-shrink: 0;
+      font-size: 0.5rem; line-height: 1.1; text-align: center;
+      overflow: hidden; text-overflow: ellipsis; word-break: break-all;
+      border: 2px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05);
+      color: #ccc; cursor: pointer; padding: 2px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .bps-btn:hover { background: rgba(255,255,255,0.12); }
+    .bps-btn.active { border-color: #2ed573; color: #2ed573; box-shadow: 0 0 8px rgba(46,213,115,0.3); }
+    .bps-btn.dragging { opacity: 0.4; }
+    .bps-btn.drag-over { border-color: #ffa502; }
+    .bps-add-btn {
+      width: 32px; height: 32px; border-radius: 5px; flex-shrink: 0;
+      border: 2px dashed rgba(255,255,255,0.2); background: transparent;
+      color: #666; font-size: 1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .bps-add-btn:hover { border-color: rgba(255,255,255,0.4); color: #aaa; }
+
+    /* XY filter inputs */
+    .xy-search-group {
+      display: flex;
+      gap: 6px;
+      margin-left: auto;
+    }
+    .xy-search-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .xy-search {
+      width: 160px;
+      padding: 6px 24px 6px 10px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 4px;
+      background: rgba(255,255,255,0.05);
+      color: #e0e0e0;
+      font-size: 0.8rem;
+      outline: none;
+    }
+    .xy-search:focus {
+      border-color: rgba(255,255,255,0.4);
+      background: rgba(255,255,255,0.08);
+    }
+    .xy-search::placeholder { color: rgba(255,255,255,0.3); }
+    .xy-search-clear {
+      position: absolute; right: 3px;
+      width: 16px; height: 16px;
+      border: none; background: none;
+      color: rgba(255,255,255,0.3); cursor: pointer;
+      padding: 0; display: none;
+      align-items: center; justify-content: center;
+      font-size: 14px; line-height: 1; border-radius: 2px;
+    }
+    .xy-search-clear:hover { color: rgba(255,255,255,0.7); }
+    .xy-search-wrap.has-value .xy-search-clear { display: flex; }
+
     /* Toast */
     .toast-container {
       position: fixed;
@@ -1432,10 +1607,15 @@
 
     <!-- Tab bar -->
     <div class="tab-bar">
-      <button class="tab-btn active" data-tab="setup">Setup</button>
-      <button class="tab-btn" data-tab="xy">XY</button>
-      <button class="tab-btn" data-tab="labels">Labels</button>
-      <button class="tab-btn" data-tab="salvos">Salvos</button>
+      <div class="tab-bar-left">
+        <button class="tab-btn active" data-tab="setup">Setup</button>
+        <button class="tab-btn" data-tab="xy">XY</button>
+        <button class="tab-btn" data-tab="labels">Labels</button>
+        <button class="tab-btn" data-tab="salvos">Salvos</button>
+      </div>
+      <div class="bps-container" id="bpsContainer">
+        <button class="bps-add-btn" id="bpsAddBtn" title="Add BPS button">+</button>
+      </div>
     </div>
 
     <!-- SETUP TAB -->
@@ -1454,9 +1634,13 @@
                 <option value="gvnative">GV Native</option>
               </select>
             </div>
-            <div class="config-group">
+            <div class="config-group" style="position:relative">
               <label>Host</label>
-              <input type="text" id="hostA" value="127.0.0.1" placeholder="IP address">
+              <div class="host-input-group">
+                <input type="text" id="hostA" value="127.0.0.1" placeholder="IP address">
+                <button type="button" class="btn-history" id="routerHistoryBtnA" title="Recent routers">&#x25BC;</button>
+              </div>
+              <div class="router-history-dropdown" id="routerHistoryDropdownA"></div>
             </div>
             <div class="config-group">
               <label>Port</label>
@@ -1471,6 +1655,10 @@
               <button class="btn btn-danger" id="disconnectA" disabled>Disconnect</button>
             </div>
             <div class="connection-status disconnected" id="connStatusA">Disconnected</div>
+            <div class="checkbox-group" style="margin-top:8px" title="Automatically connect to Router A when the application starts">
+              <input type="checkbox" id="autoConnectA">
+              <label for="autoConnectA">Auto-connect on launch</label>
+            </div>
           </div>
 
           <!-- Router B -->
@@ -1484,9 +1672,13 @@
                 <option value="gvnative">GV Native</option>
               </select>
             </div>
-            <div class="config-group">
+            <div class="config-group" style="position:relative">
               <label>Host</label>
-              <input type="text" id="hostB" value="127.0.0.1" placeholder="IP address">
+              <div class="host-input-group">
+                <input type="text" id="hostB" value="127.0.0.1" placeholder="IP address">
+                <button type="button" class="btn-history" id="routerHistoryBtnB" title="Recent routers">&#x25BC;</button>
+              </div>
+              <div class="router-history-dropdown" id="routerHistoryDropdownB"></div>
             </div>
             <div class="config-group">
               <label>Port</label>
@@ -1501,6 +1693,10 @@
               <button class="btn btn-danger" id="disconnectB" disabled>Disconnect</button>
             </div>
             <div class="connection-status disconnected" id="connStatusB">Disconnected</div>
+            <div class="checkbox-group" style="margin-top:8px" title="Automatically connect to Router B when the application starts">
+              <input type="checkbox" id="autoConnectB">
+              <label for="autoConnectB">Auto-connect on launch</label>
+            </div>
           </div>
         </div>
 
@@ -1540,10 +1736,6 @@
         <!-- Settings -->
         <div class="settings-section">
           <h3>Settings</h3>
-          <div class="checkbox-group" title="Automatically connect to both routers when the application starts">
-            <input type="checkbox" id="autoConnect">
-            <label for="autoConnect">Auto-connect on launch</label>
-          </div>
           <div class="checkbox-group" title="Automatically attempt to reconnect if a router connection is lost">
             <input type="checkbox" id="autoReconnect" checked>
             <label for="autoReconnect">Auto-reconnect on disconnect</label>
@@ -1605,6 +1797,16 @@
           <div class="toolbar-label">Salvos:</div>
           <div class="salvo-quick-buttons" id="salvoQuickButtons">
             <span style="font-size:0.75rem; color:#666">No salvos</span>
+          </div>
+          <div class="xy-search-group">
+            <div class="xy-search-wrap">
+              <input type="text" class="xy-search" id="xySearchDst" placeholder="Filter destinations... (e.g. 1-10,17,20)">
+              <button class="xy-search-clear" data-for="xySearchDst" title="Clear">&times;</button>
+            </div>
+            <div class="xy-search-wrap">
+              <input type="text" class="xy-search" id="xySearchSrc" placeholder="Filter sources... (e.g. 1-10,17,20)">
+              <button class="xy-search-clear" data-for="xySearchSrc" title="Clear">&times;</button>
+            </div>
           </div>
         </div>
         <div class="xy-grid-container" id="xyGridContainer">
@@ -1741,6 +1943,12 @@
     let lastSelectedLabel = null; // { type, index } anchor for shift-select
     let copiedLabels = [];
 
+    // Label colours (persisted separately)
+    let labelColors = { inputLabelColors: {}, outputLabelColors: {} };
+
+    // BPS buttons
+    let bpsButtons = [];
+
     // Import resolution pending data
     let pendingImportData = null;
 
@@ -1766,7 +1974,8 @@
         if (settings.routerB.levels > 1) document.getElementById('levelsB').value = settings.routerB.levels;
       }
 
-      document.getElementById('autoConnect').checked = settings.autoConnect || false;
+      document.getElementById('autoConnectA').checked = settings.autoConnectA || false;
+      document.getElementById('autoConnectB').checked = settings.autoConnectB || false;
       document.getElementById('autoReconnect').checked = settings.autoReconnect !== false;
       document.getElementById('autoProtect').checked = settings.autoProtect || false;
 
@@ -1793,6 +2002,12 @@
       // Load salvos
       salvos = await api.getSalvos();
 
+      // Load label colours
+      labelColors = await api.getLabelColors();
+
+      // Load BPS buttons
+      bpsButtons = await api.getBpsButtons();
+
       // Switch to saved tab
       if (settings.activeTab) switchTab(settings.activeTab);
 
@@ -1801,12 +2016,10 @@
       setupIPCListeners();
 
       // Auto-connect
-      if (settings.autoConnect) {
-        setTimeout(() => {
-          if (settings.routerA?.host) connectRouter('A');
-          if (settings.routerB?.host) connectRouter('B');
-        }, 500);
-      }
+      setTimeout(() => {
+        if (settings.autoConnectA && settings.routerA?.host) connectRouter('A');
+        if (settings.autoConnectB && settings.routerB?.host) connectRouter('B');
+      }, 500);
 
       // Show version in header
       api.getVersion().then(v => {
@@ -1891,6 +2104,66 @@
     async function disconnectRouter(routerId) {
       await api.disconnectRouter(routerId);
       setConnectionStatus(routerId, 'disconnected', 'Disconnected');
+    }
+
+    // Router history dropdown
+    function renderRouterHistory(routerId, history) {
+      const dropdown = document.getElementById(`routerHistoryDropdown${routerId}`);
+      if (!history || history.length === 0) {
+        dropdown.innerHTML = '<div class="router-history-empty">No recent routers</div>';
+        return;
+      }
+      const protocolLabels = { videohub: 'VideoHub', swp08: 'SW-P-08', gvnative: 'GV Native' };
+      dropdown.innerHTML = history.map((router, index) => {
+        const displayName = router.name || 'Unknown Router';
+        const protocolLabel = protocolLabels[router.protocol] || router.protocol;
+        return `
+          <div class="router-history-item" data-index="${index}" data-host="${router.host}" data-port="${router.port}" data-protocol="${router.protocol}">
+            <div class="router-info">
+              <div class="router-name">${displayName}</div>
+              <div class="router-address">${router.host}:${router.port}</div>
+              <div class="router-protocol">${protocolLabel}</div>
+            </div>
+            <button class="remove-btn" data-index="${index}" title="Remove from history">&times;</button>
+          </div>
+        `;
+      }).join('');
+
+      dropdown.querySelectorAll('.router-history-item').forEach(item => {
+        item.addEventListener('click', async (e) => {
+          if (e.target.classList.contains('remove-btn')) {
+            e.stopPropagation();
+            const idx = parseInt(e.target.dataset.index);
+            const newHistory = await api.removeRouterFromHistory(idx);
+            renderRouterHistory(routerId, newHistory);
+            return;
+          }
+          document.getElementById(`host${routerId}`).value = item.dataset.host;
+          document.getElementById(`port${routerId}`).value = item.dataset.port;
+          if (item.dataset.protocol) {
+            document.getElementById(`protocol${routerId}`).value = item.dataset.protocol;
+            updateProtocolUI(routerId);
+          }
+          dropdown.classList.remove('visible');
+          connectRouter(routerId);
+        });
+      });
+    }
+
+    function setupRouterHistoryBtn(routerId) {
+      const btn = document.getElementById(`routerHistoryBtn${routerId}`);
+      const dropdown = document.getElementById(`routerHistoryDropdown${routerId}`);
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        // Close the other dropdown
+        const otherId = routerId === 'A' ? 'B' : 'A';
+        document.getElementById(`routerHistoryDropdown${otherId}`).classList.remove('visible');
+        if (!dropdown.classList.contains('visible')) {
+          const history = await api.getRouterHistory();
+          renderRouterHistory(routerId, history);
+        }
+        dropdown.classList.toggle('visible');
+      });
     }
 
     function setConnectionStatus(routerId, status, text) {
@@ -2191,6 +2464,8 @@
           if (header) {
             header.textContent = next.inputLabels[i] || `Input ${i + 1}`;
             header.title = next.inputLabels[i] || `Input ${i + 1}`;
+            const iColor = getLabelColor('input', i);
+            header.style.color = iColor || '';
           }
         }
       }
@@ -2200,6 +2475,8 @@
           if (header) {
             header.textContent = next.outputLabels[o] || `Output ${o + 1}`;
             header.title = next.outputLabels[o] || `Output ${o + 1}`;
+            const oColor = getLabelColor('output', o);
+            header.style.color = oColor || '';
           }
         }
       }
@@ -2229,7 +2506,7 @@
       for (let i = 0; i < inputs; i++) {
         const isSep = (i === routerAInputCount && routerBInputCount > 0);
         const physIdx = inputPhysicalIndices?.[i] || (i + 1);
-        html += `<th class="input-index${isSep ? ' input-separator' : ''}">${physIdx}</th>`;
+        html += `<th class="input-index${isSep ? ' input-separator' : ''}" data-input="${i}">${physIdx}</th>`;
       }
       html += '</tr>';
 
@@ -2239,8 +2516,10 @@
         const router = inputRouterMap[i] || 'A';
         const isSep = (i === routerAInputCount && routerBInputCount > 0);
         const label = inputLabels[i] || `Input ${i + 1}`;
+        const inputColor = getLabelColor('input', i);
+        const inputColorStyle = inputColor ? ` style="color:${inputColor}"` : '';
         html += `<th class="input-header router-${router.toLowerCase()}${isSep ? ' input-separator' : ''}" data-input="${i}">
-          <span class="header-text" title="${label}">${label}</span></th>`;
+          <span class="header-text" title="${label}"${inputColorStyle}>${label}</span></th>`;
       }
       html += '</tr></thead><tbody>';
 
@@ -2257,7 +2536,7 @@
         const lockIcon = isLocked ? LOCK_ICON_LOCKED : LOCK_ICON_UNLOCKED;
         const lockTitle = isLockedByOther ? 'Locked by another client (hold to force unlock)' : (isLocked ? 'Click to unlock' : 'Click to lock');
 
-        html += `<tr class="${isSep ? 'output-separator' : ''}">`;
+        html += `<tr data-output="${o}" class="${isSep ? 'output-separator' : ''}">`;
 
         // Lock cell
         html += `<td class="lock-cell${isSep ? ' output-separator' : ''}"><button class="xy-lock-btn ${lockBtnClass}" data-output="${o}" title="${lockTitle}">${lockIcon}</button></td>`;
@@ -2267,8 +2546,10 @@
         html += `<td class="output-index${isSep ? ' output-separator' : ''}">${physOutIdx}</td>`;
 
         // Output label header
+        const outputColor = getLabelColor('output', o);
+        const outputColorStyle = outputColor ? ` style="color:${outputColor}"` : '';
         html += `<th class="output-header router-${router.toLowerCase()}${isSep ? ' output-separator' : ''}" data-output="${o}">
-            <span class="header-text" title="${label}">${label}</span></th>`;
+            <span class="header-text" title="${label}"${outputColorStyle}>${label}</span></th>`;
 
         for (let i = 0; i < inputs; i++) {
           const oRouter = outputRouterMap[o] || 'A';
@@ -2350,8 +2631,98 @@
       // Update tie-line status
       updateTieLineStatusBar();
 
-      // Update minimap after DOM paint
-      requestAnimationFrame(updateMinimap);
+      // Update minimap after DOM paint, then apply filter
+      requestAnimationFrame(() => {
+        updateMinimap();
+        applyXYFilter();
+      });
+    }
+
+    // Parse filter query supporting range/list syntax like "1-10,17,18,20"
+    // Returns { numbers: Set|null, text: string|null }
+    // If all parts are numeric ranges/values, returns numbers set; otherwise falls back to text search
+    function parseFilterQuery(query) {
+      if (!query) return { numbers: null, text: null };
+      // Check if the query looks like a numeric range/list (only digits, dashes, commas, spaces)
+      if (/^[\d\s,\-]+$/.test(query) && /\d/.test(query)) {
+        const numbers = new Set();
+        const parts = query.split(',');
+        for (const part of parts) {
+          const trimmed = part.trim();
+          if (!trimmed) continue;
+          const rangeMatch = trimmed.match(/^(\d+)\s*-\s*(\d+)$/);
+          if (rangeMatch) {
+            const start = parseInt(rangeMatch[1]);
+            const end = parseInt(rangeMatch[2]);
+            for (let n = Math.min(start, end); n <= Math.max(start, end); n++) {
+              numbers.add(n);
+            }
+          } else if (/^\d+$/.test(trimmed)) {
+            numbers.add(parseInt(trimmed));
+          } else {
+            // Not a valid numeric pattern, fall back to text
+            return { numbers: null, text: query.toLowerCase() };
+          }
+        }
+        return { numbers, text: null };
+      }
+      return { numbers: null, text: query.toLowerCase() };
+    }
+
+    function matchesFilter(filter, physIdx, label) {
+      if (!filter.numbers && !filter.text) return true;
+      if (filter.numbers) return filter.numbers.has(parseInt(physIdx));
+      return physIdx.includes(filter.text) || label.toLowerCase().includes(filter.text);
+    }
+
+    function applyXYFilter() {
+      const srcQuery = (document.getElementById('xySearchSrc')?.value || '').trim();
+      const dstQuery = (document.getElementById('xySearchDst')?.value || '').trim();
+      const grid = document.getElementById('xyGrid');
+      if (!grid) return;
+
+      const { inputs, outputs, inputLabels, outputLabels, inputPhysicalIndices, outputPhysicalIndices } = virtualState;
+      const srcFilter = parseFilterQuery(srcQuery);
+      const dstFilter = parseFilterQuery(dstQuery);
+
+      // Build set of visible input indices
+      const visibleInputs = new Set();
+      for (let i = 0; i < inputs; i++) {
+        const physIdx = String(inputPhysicalIndices?.[i] || (i + 1));
+        const label = inputLabels[i] || `Input ${i + 1}`;
+        if (matchesFilter(srcFilter, physIdx, label)) {
+          visibleInputs.add(i);
+        }
+      }
+
+      // Filter column headers (index row + label row)
+      grid.querySelectorAll('th.input-index').forEach(cell => {
+        const idx = parseInt(cell.dataset.input);
+        cell.style.display = visibleInputs.has(idx) ? '' : 'none';
+      });
+      grid.querySelectorAll('th.input-header').forEach(cell => {
+        const idx = parseInt(cell.dataset.input);
+        cell.style.display = visibleInputs.has(idx) ? '' : 'none';
+      });
+
+      // Filter rows and crosspoint cells
+      grid.querySelectorAll('tbody tr').forEach(row => {
+        const output = parseInt(row.dataset.output);
+        const physIdx = String(outputPhysicalIndices?.[output] || (output + 1));
+        const label = outputLabels[output] || `Output ${output + 1}`;
+        const rowVisible = matchesFilter(dstFilter, physIdx, label);
+        row.style.display = rowVisible ? '' : 'none';
+
+        if (rowVisible) {
+          row.querySelectorAll('td[data-input]').forEach(cell => {
+            const input = parseInt(cell.dataset.input);
+            cell.style.display = visibleInputs.has(input) ? '' : 'none';
+          });
+        }
+      });
+
+      // Refresh minimap (delayed so display:none takes effect before viewport calc)
+      setTimeout(() => updateMinimap(), 0);
     }
 
     // XY grid click handler
@@ -2567,7 +2938,41 @@
       if (!minimap || !canvas) return;
       if (!virtualState || virtualState.outputs === 0 || virtualState.inputs === 0) return;
 
-      const { inputs, outputs, routing, routerAInputCount, routerAOutputCount, inputRouterMap, outputRouterMap } = virtualState;
+      const { inputs, outputs, routing, routerAInputCount, routerAOutputCount,
+              inputRouterMap, outputRouterMap, inputLabels, outputLabels,
+              inputPhysicalIndices, outputPhysicalIndices } = virtualState;
+
+      // Build filtered arrays based on current search queries
+      const srcQuery = (document.getElementById('xySearchSrc')?.value || '').trim();
+      const dstQuery = (document.getElementById('xySearchDst')?.value || '').trim();
+      const srcFilter = parseFilterQuery(srcQuery);
+      const dstFilter = parseFilterQuery(dstQuery);
+
+      const visibleInputs = [];
+      for (let i = 0; i < inputs; i++) {
+        const physIdx = String(inputPhysicalIndices?.[i] || (i + 1));
+        const label = inputLabels[i] || `Input ${i + 1}`;
+        if (matchesFilter(srcFilter, physIdx, label)) visibleInputs.push(i);
+      }
+
+      const visibleOutputs = [];
+      for (let o = 0; o < outputs; o++) {
+        const physIdx = String(outputPhysicalIndices?.[o] || (o + 1));
+        const label = outputLabels[o] || `Output ${o + 1}`;
+        if (matchesFilter(dstFilter, physIdx, label)) visibleOutputs.push(o);
+      }
+
+      if (visibleInputs.length === 0 || visibleOutputs.length === 0) {
+        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+        if (viewport) viewport.style.display = 'none';
+        return;
+      }
+
+      // Build reverse lookup: original input index → filtered position
+      const inputPosMap = new Map();
+      visibleInputs.forEach((idx, pos) => inputPosMap.set(idx, pos));
+      const outputPosMap = new Map();
+      visibleOutputs.forEach((idx, pos) => outputPosMap.set(idx, pos));
 
       const ctx = canvas.getContext('2d');
       const rect = minimap.getBoundingClientRect();
@@ -2577,61 +2982,71 @@
 
       canvas.width = width;
       canvas.height = height;
-
       ctx.clearRect(0, 0, width, height);
 
-      // Dot sizing: X = inputs (columns), Y = outputs (rows)
-      const dotSpacingX = width / inputs;
-      const dotSpacingY = height / outputs;
-      const dotSize = Math.max(1, Math.min(dotSpacingX, dotSpacingY) * 0.6);
+      const dotSpacingX = width / visibleInputs.length;
+      const dotSpacingY = height / visibleOutputs.length;
+      const dotSize = Math.max(1.5, Math.min(dotSpacingX, dotSpacingY) * 0.6);
 
-      // Draw separator lines between routers
-      if (routerAInputCount > 0 && routerAInputCount < inputs) {
-        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-        ctx.beginPath();
-        ctx.moveTo(routerAInputCount * dotSpacingX, 0);
-        ctx.lineTo(routerAInputCount * dotSpacingX, height);
-        ctx.stroke();
+      // Draw separator lines between routers (only if both sides visible)
+      if (!srcFilter.numbers && !srcFilter.text && routerAInputCount > 0 && routerAInputCount < inputs) {
+        const sepPos = inputPosMap.get(routerAInputCount);
+        if (sepPos !== undefined) {
+          ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+          ctx.beginPath();
+          ctx.moveTo(sepPos * dotSpacingX, 0);
+          ctx.lineTo(sepPos * dotSpacingX, height);
+          ctx.stroke();
+        }
       }
-      if (routerAOutputCount > 0 && routerAOutputCount < outputs) {
-        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-        ctx.beginPath();
-        ctx.moveTo(0, routerAOutputCount * dotSpacingY);
-        ctx.lineTo(width, routerAOutputCount * dotSpacingY);
-        ctx.stroke();
+      if (!dstFilter.numbers && !dstFilter.text && routerAOutputCount > 0 && routerAOutputCount < outputs) {
+        const sepPos = outputPosMap.get(routerAOutputCount);
+        if (sepPos !== undefined) {
+          ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+          ctx.beginPath();
+          ctx.moveTo(0, sepPos * dotSpacingY);
+          ctx.lineTo(width, sepPos * dotSpacingY);
+          ctx.stroke();
+        }
       }
 
-      // Draw crosspoints: X = input (column), Y = output (row)
+      // Draw crosspoints for visible routes only
       for (const [outStr, inp] of Object.entries(routing)) {
         const out = parseInt(outStr);
+        if (!outputPosMap.has(out) || !inputPosMap.has(inp)) continue;
         const oRouter = outputRouterMap[out] || 'A';
         const iRouter = inputRouterMap[inp] || 'A';
         const isCross = oRouter !== iRouter;
         ctx.fillStyle = isCross ? '#a273eb' : '#2ed573';
-        const x = (inp + 0.5) * dotSpacingX;
-        const y = (out + 0.5) * dotSpacingY;
+        const colPos = inputPosMap.get(inp);
+        const rowPos = outputPosMap.get(out);
+        const x = (colPos + 0.5) * dotSpacingX;
+        const y = (rowPos + 0.5) * dotSpacingY;
         ctx.beginPath();
         ctx.arc(x, y, dotSize / 2, 0, Math.PI * 2);
         ctx.fill();
       }
+
+      // Store visible counts for viewport
+      minimap._visibleInputs = visibleInputs.length;
+      minimap._visibleOutputs = visibleOutputs.length;
 
       // Update viewport indicator
       if (viewport) {
         const gridContainer = document.getElementById('xyGridContainer');
         const grid = document.getElementById('xyGrid');
         if (grid.offsetWidth > 0 && grid.offsetHeight > 0) {
-          // Calculate the crosspoint area (excluding headers)
-          const firstCell = grid.querySelector('td[data-output]');
+          const firstCell = grid.querySelector('td[data-output]:not([style*="display: none"])');
           if (firstCell) {
             const gridRect = grid.getBoundingClientRect();
             const cellRect = firstCell.getBoundingClientRect();
             const headerWidth = cellRect.left - gridRect.left;
             const headerHeight = cellRect.top - gridRect.top;
-            const crosspointWidth = grid.offsetWidth - headerWidth;
-            const crosspointHeight = grid.offsetHeight - headerHeight;
+            const crosspointWidth = gridContainer.scrollWidth - headerWidth;
+            const crosspointHeight = gridContainer.scrollHeight - headerHeight;
 
-            const scrollLeft = gridContainer.scrollLeft - headerWidth;
-            const scrollTop = gridContainer.scrollTop - headerHeight;
+            const scrollLeft = gridContainer.scrollLeft;
+            const scrollTop = gridContainer.scrollTop;
             const visibleWidth = gridContainer.clientWidth - headerWidth;
             const visibleHeight = gridContainer.clientHeight - headerHeight;
 
@@ -2647,6 +3062,8 @@
 
             const showViewport = vpWidth < width * 0.95 || vpHeight < height * 0.95;
             viewport.style.display = showViewport ? 'block' : 'none';
+          } else {
+            viewport.style.display = 'none';
           }
         }
       }
@@ -2662,17 +3079,20 @@
       const relX = (clientX - minimapRect.left) / minimapRect.width;
       const relY = (clientY - minimapRect.top) / minimapRect.height;
 
-      const firstCell = grid.querySelector('td[data-output]');
+      const firstCell = grid.querySelector('td[data-output]:not([style*="display: none"])');
       if (!firstCell) return;
       const gridRect = grid.getBoundingClientRect();
       const cellRect = firstCell.getBoundingClientRect();
       const headerWidth = cellRect.left - gridRect.left;
       const headerHeight = cellRect.top - gridRect.top;
-      const crosspointWidth = grid.offsetWidth - headerWidth;
-      const crosspointHeight = grid.offsetHeight - headerHeight;
+      const crosspointWidth = gridContainer.scrollWidth - headerWidth;
+      const crosspointHeight = gridContainer.scrollHeight - headerHeight;
 
-      gridContainer.scrollLeft = headerWidth + relX * crosspointWidth - gridContainer.clientWidth / 2;
-      gridContainer.scrollTop = headerHeight + relY * crosspointHeight - gridContainer.clientHeight / 2;
+      const visibleWidth = gridContainer.clientWidth - headerWidth;
+      const visibleHeight = gridContainer.clientHeight - headerHeight;
+
+      gridContainer.scrollLeft = relX * crosspointWidth - visibleWidth / 2;
+      gridContainer.scrollTop = relY * crosspointHeight - visibleHeight / 2;
       updateMinimap();
     }
 
@@ -2711,6 +3131,81 @@
     // ===========================================
     // LABELS
     // ===========================================
+    function getLabelColor(type, index) {
+      const colors = type === 'input' ? labelColors.inputLabelColors : labelColors.outputLabelColors;
+      return colors?.[index] || null;
+    }
+
+    function showLabelColorPicker(anchor, type, index) {
+      document.querySelectorAll('.label-color-popup').forEach(p => p.remove());
+
+      const popup = document.createElement('div');
+      popup.className = 'label-color-popup';
+      popup.style.cssText = 'position:fixed;z-index:10001;background:#2d3436;border:1px solid rgba(255,255,255,0.2);border-radius:6px;padding:8px;display:flex;gap:4px;flex-wrap:wrap;width:140px;box-shadow:0 4px 20px rgba(0,0,0,0.5)';
+
+      const currentColor = getLabelColor(type, index);
+
+      SALVO_COLORS.forEach(c => {
+        const swatch = document.createElement('div');
+        swatch.style.cssText = `width:22px;height:22px;border-radius:4px;cursor:pointer;background:${c.value};border:2px solid ${currentColor === c.value ? '#fff' : 'rgba(255,255,255,0.2)'}`;
+        swatch.title = c.name;
+        swatch.addEventListener('click', async () => {
+          await api.setLabelColor(type, index, c.value);
+          labelColors = await api.getLabelColors();
+          renderLabels();
+          if (activeTab === 'xy') renderXYGrid();
+          popup.remove();
+        });
+        popup.appendChild(swatch);
+      });
+
+      const clearSwatch = document.createElement('div');
+      clearSwatch.style.cssText = 'width:22px;height:22px;border-radius:4px;cursor:pointer;border:2px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;color:#888;font-size:0.7rem';
+      clearSwatch.textContent = '✕';
+      clearSwatch.title = 'Clear colour';
+      clearSwatch.addEventListener('click', async () => {
+        await api.setLabelColor(type, index, null);
+        labelColors = await api.getLabelColors();
+        renderLabels();
+        if (activeTab === 'xy') renderXYGrid();
+        popup.remove();
+      });
+      popup.appendChild(clearSwatch);
+
+      const rect = anchor.getBoundingClientRect();
+      popup.style.left = `${rect.right + 5}px`;
+      popup.style.top = `${rect.top - 5}px`;
+      document.body.appendChild(popup);
+
+      requestAnimationFrame(() => {
+        const pr = popup.getBoundingClientRect();
+        if (pr.right > window.innerWidth) popup.style.left = `${rect.left - pr.width - 5}px`;
+        if (pr.bottom > window.innerHeight) popup.style.top = `${window.innerHeight - pr.height - 10}px`;
+      });
+
+      const close = (e) => {
+        if (!popup.contains(e.target) && e.target !== anchor) {
+          popup.remove();
+          document.removeEventListener('mousedown', close);
+        }
+      };
+      setTimeout(() => document.addEventListener('mousedown', close), 0);
+    }
+
+    async function setLabelColorForSelection(type, color) {
+      const indices = Array.from(selectedLabelItems)
+        .filter(k => k.startsWith(type + '-'))
+        .map(k => parseInt(k.split('-')[1]));
+      if (indices.length === 0) return;
+
+      const colorMap = {};
+      indices.forEach(i => { colorMap[i] = color; });
+      await api.setLabelColorsBulk(type, colorMap);
+      labelColors = await api.getLabelColors();
+      renderLabels();
+      if (activeTab === 'xy') renderXYGrid();
+    }
+
     function renderLabels() {
       renderLabelList('input', 'inputLabelList');
       renderLabelList('output', 'outputLabelList');
@@ -2747,6 +3242,28 @@
           <span class="label-name">${escapeHtml(defaultName)}</span>
           <input type="text" value="${escapeHtml(label)}" data-type="${type}" data-index="${i}">
         `;
+
+        // Apply label colour to input text
+        const currentColor = getLabelColor(type, i);
+        const input = item.querySelector('input');
+        if (currentColor) {
+          input.style.color = currentColor;
+        }
+
+        // Colour swatch button
+        const colorBtn = document.createElement('div');
+        colorBtn.className = 'label-color-btn';
+        if (currentColor) {
+          colorBtn.style.background = currentColor;
+          colorBtn.classList.add('has-color');
+        }
+        colorBtn.title = currentColor ? `Colour: ${currentColor} (click to change)` : 'Set colour';
+        colorBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          showLabelColorPicker(colorBtn, type, i);
+        });
+        item.appendChild(colorBtn);
+
         container.appendChild(item);
       }
 
@@ -2785,6 +3302,7 @@
       const selected = getSelectedIndicesForType(type);
       const hasMultiSelect = selected.length >= 2;
       const hasThreeOrMore = selected.length >= 3;
+      const hasSelection = selectedLabelItems.size > 0;
       const items = [
         { label: 'Copy', action: () => copyLabels(type) },
         { label: 'Paste', action: () => pasteLabels(type, index) },
@@ -2793,6 +3311,9 @@
           title: hasMultiSelect ? '' : 'Select 2+ labels first' },
         { label: 'Fill and Offset', action: () => fillAndOffset(type), disabled: !hasThreeOrMore,
           title: hasThreeOrMore ? '' : 'Select 3+ labels first (first 2 set the pattern)' },
+        { separator: true },
+        { label: 'Set Colour', colorSwatches: true, disabled: !hasSelection },
+        { label: 'Clear Colour', action: () => setLabelColorForSelection(type, null), disabled: !hasSelection },
         { separator: true },
         { label: 'Select All', action: () => selectAllLabels(type) },
         { label: 'Clear Selection', action: () => { selectedLabelItems.clear(); renderLabels(); } }
@@ -2804,6 +3325,26 @@
           const sep = document.createElement('div');
           sep.className = 'context-menu-separator';
           menu.appendChild(sep);
+        } else if (item.colorSwatches) {
+          const div = document.createElement('div');
+          div.className = 'context-menu-item' + (item.disabled ? ' disabled' : '');
+          div.innerHTML = `<span>${item.label}</span><span class="context-menu-colors"></span>`;
+          if (!item.disabled) {
+            const swatchContainer = div.querySelector('.context-menu-colors');
+            SALVO_COLORS.forEach(c => {
+              const swatch = document.createElement('span');
+              swatch.className = 'context-menu-color-swatch';
+              swatch.style.background = c.value;
+              swatch.title = c.name;
+              swatch.addEventListener('click', async (ev) => {
+                ev.stopPropagation();
+                menu.classList.remove('visible');
+                await setLabelColorForSelection(type, c.value);
+              });
+              swatchContainer.appendChild(swatch);
+            });
+          }
+          menu.appendChild(div);
         } else {
           const div = document.createElement('div');
           div.className = 'context-menu-item' + (item.disabled ? ' disabled' : '');
@@ -3025,10 +3566,16 @@
         const labelEl = document.createElement('span');
         labelEl.className = 'dest-label';
         labelEl.textContent = label;
+        const destColor = getLabelColor('output', o);
+        if (destColor) labelEl.style.color = destColor;
 
         const source = document.createElement('span');
         source.className = 'dest-source';
         source.textContent = sourceLabel ? `\u2190 ${sourceLabel}` : '';
+        if (inputIdx !== undefined) {
+          const srcColor = getLabelColor('input', inputIdx);
+          if (srcColor) source.style.color = srcColor;
+        }
 
         row.appendChild(checkbox);
         row.appendChild(num);
@@ -3079,14 +3626,18 @@
     }
 
     const SALVO_COLORS = [
+      { name: 'Brown', value: '#8B4513' },
       { name: 'Red', value: '#e74c3c' },
       { name: 'Orange', value: '#e67e22' },
       { name: 'Yellow', value: '#f1c40f' },
       { name: 'Green', value: '#2ecc71' },
       { name: 'Blue', value: '#3498db' },
-      { name: 'Purple', value: '#9b59b6' },
-      { name: 'Pink', value: '#e84393' },
+      { name: 'Violet', value: '#9b59b6' },
+      { name: 'Grey', value: '#888888' },
+      { name: 'White', value: '#ffffff' },
+      { name: 'Black', value: '#1a1a1a' },
       { name: 'Cyan', value: '#00cec9' },
+      { name: 'Pink', value: '#e84393' },
     ];
 
     function renderSalvos() {
@@ -3126,7 +3677,7 @@
             <span class="salvo-drag-handle" title="Drag to reorder">⋮⋮</span>
             <span class="salvo-color-dot" style="background:${salvo.color || '#555'}" data-salvo-id="${salvo.id}" title="Click to change color"></span>
             <div style="flex:1">
-              <div class="salvo-card-name">${escapeHtml(salvo.name)}</div>
+              <div class="salvo-card-name">${salvo.protected ? '🔒 ' : ''}${escapeHtml(salvo.name)}</div>
               <div class="salvo-card-info">${infoText}</div>
             </div>
             <span class="salvo-disclosure">▶</span>
@@ -3142,10 +3693,12 @@
           <div class="salvo-card-body">
             ${salvo.routes.map(r => {
               const cross = r.outputRouter !== r.inputRouter;
+              const outColor = getLabelColor('output', r.output);
+              const inColor = getLabelColor('input', r.input);
               return `<div class="salvo-route-row">
-                <span class="route-output">${escapeHtml(r.outputLabel || `Out ${r.output + 1}`)}</span>
+                <span class="route-output"${outColor ? ` style="color:${outColor}"` : ''}>${escapeHtml(r.outputLabel || `Out ${r.output + 1}`)}</span>
                 <span class="route-arrow">&larr;</span>
-                <span class="route-input">${escapeHtml(r.inputLabel || `In ${r.input + 1}`)}</span>
+                <span class="route-input"${inColor ? ` style="color:${inColor}"` : ''}>${escapeHtml(r.inputLabel || `In ${r.input + 1}`)}</span>
                 ${cross ? '<span class="route-cross">[cross]</span>' : ''}
               </div>`;
             }).join('')}
@@ -3195,6 +3748,12 @@
           }
         });
 
+        // Right-click to edit salvo
+        card.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          showSalvoEditModal(salvo);
+        });
+
         salvosList.appendChild(card);
       }
     }
@@ -3210,8 +3769,8 @@
       for (const salvo of salvos) {
         const btn = document.createElement('button');
         btn.className = 'salvo-quick-btn';
-        btn.textContent = salvo.name;
-        btn.title = `Recall: ${salvo.name}`;
+        btn.textContent = (salvo.protected ? '🔒 ' : '') + salvo.name;
+        btn.title = `Recall ${salvo.routes?.length || 0} routes${salvo.protected ? ' (protected — will confirm)' : ''}`;
         btn.dataset.id = salvo.id;
         if (salvo.color) {
           btn.style.borderColor = salvo.color;
@@ -3219,6 +3778,10 @@
           btn.style.background = salvo.color + '20';
         }
         btn.addEventListener('click', () => recallSalvo(salvo.id));
+        btn.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          showSalvoEditModal(salvo);
+        });
         container.appendChild(btn);
       }
     }
@@ -3247,6 +3810,13 @@
         return;
       }
       const salvo = salvos.find(s => s.id === salvoId);
+      if (!salvo) return;
+
+      if (salvo.protected) {
+        const routeCount = salvo.routes ? salvo.routes.length : 0;
+        if (!confirm(`Recall protected salvo "${salvo.name}"?\n\nThis will apply ${routeCount} route${routeCount !== 1 ? 's' : ''}.`)) return;
+      }
+
       const result = await api.recallSalvo(salvoId);
       if (result.success) {
         showToast(`Salvo "${salvo?.name}" recalled (${result.appliedCount} routes)`, 'success');
@@ -3267,6 +3837,94 @@
         renderSalvoQuickButtons();
         showToast('Salvo deleted', 'info');
       }
+    }
+
+    function showSalvoEditModal(salvo) {
+      const overlay = document.createElement('div');
+      overlay.className = 'bps-edit-overlay';
+
+      const escapedName = (salvo.name || '').replace(/"/g, '&quot;');
+      const selectedColor = salvo.color || '';
+
+      let swatchesHtml = `<div class="bps-color-swatch no-color${!selectedColor ? ' selected' : ''}" data-color=""></div>`;
+      SALVO_COLORS.forEach(c => {
+        swatchesHtml += `<div class="bps-color-swatch${selectedColor === c.value ? ' selected' : ''}" data-color="${c.value}" style="background:${c.value}" title="${c.name}"></div>`;
+      });
+
+      const routeCount = salvo.routes ? salvo.routes.length : 0;
+      const date = new Date(salvo.createdAt).toLocaleDateString();
+      const isProtected = salvo.protected || false;
+
+      overlay.innerHTML = `
+        <div class="bps-edit-dialog">
+          <h3>Edit Salvo</h3>
+          <label>Name</label>
+          <input type="text" id="salvoEditName" value="${escapedName}" style="width:100%;padding:6px 8px;border:1px solid rgba(255,255,255,0.2);border-radius:4px;background:rgba(0,0,0,0.3);color:#e0e0e0;font-size:0.85rem;margin-bottom:12px;outline:none;box-sizing:border-box;">
+          <label>Colour</label>
+          <div class="bps-color-swatches">${swatchesHtml}</div>
+          <label style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;user-select:none;">
+            <input type="checkbox" id="salvoEditProtected" ${isProtected ? 'checked' : ''} style="width:16px;height:16px;accent-color:#ffa502;cursor:pointer;">
+            <span>Protected — confirm before recalling</span>
+          </label>
+          <div style="color:#636e72;font-size:0.75rem;margin-bottom:16px;">${routeCount} routes | Created ${date}</div>
+          <div class="bps-edit-buttons">
+            <button class="bps-save" data-action="save">Save</button>
+            <button class="bps-delete" data-action="delete">Delete</button>
+            <button data-action="cancel">Cancel</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+
+      let currentColor = selectedColor;
+      overlay.querySelectorAll('.bps-color-swatch').forEach(swatch => {
+        swatch.addEventListener('click', () => {
+          overlay.querySelectorAll('.bps-color-swatch').forEach(s => s.classList.remove('selected'));
+          swatch.classList.add('selected');
+          currentColor = swatch.dataset.color;
+        });
+      });
+
+      overlay.addEventListener('click', async (e) => {
+        const action = e.target.dataset.action;
+        if (!action) return;
+
+        if (action === 'cancel') {
+          overlay.remove();
+          return;
+        }
+
+        if (action === 'delete') {
+          const result = await api.deleteSalvo(salvo.id);
+          if (result.success) {
+            salvos = result.salvos;
+            renderSalvos();
+            renderSalvoQuickButtons();
+          }
+          overlay.remove();
+          return;
+        }
+
+        if (action === 'save') {
+          const newName = overlay.querySelector('#salvoEditName').value.trim();
+          if (newName) salvo.name = newName;
+          salvo.color = currentColor || null;
+          salvo.protected = overlay.querySelector('#salvoEditProtected').checked;
+          const result = await api.saveSalvo(salvo);
+          if (result.success) {
+            salvos = result.salvos;
+            renderSalvos();
+            renderSalvoQuickButtons();
+          }
+          overlay.remove();
+          return;
+        }
+      });
+
+      overlay.addEventListener('mousedown', (e) => {
+        if (e.target === overlay) overlay.remove();
+      });
     }
 
     // ===========================================
@@ -3319,6 +3977,220 @@
     }
 
     // ===========================================
+    // BPS BUTTONS
+    // ===========================================
+    function renderBpsButtons() {
+      const container = document.getElementById('bpsContainer');
+      const addBtn = document.getElementById('bpsAddBtn');
+      if (!container || !addBtn) return;
+
+      container.querySelectorAll('.bps-btn').forEach(b => b.remove());
+
+      bpsButtons.forEach(bps => {
+        const btn = document.createElement('button');
+        btn.className = 'bps-btn';
+        btn.dataset.bpsId = bps.id;
+        btn.draggable = true;
+
+        const srcLabel = virtualState.inputLabels[bps.source] || `Src ${bps.source + 1}`;
+        const dstLabel = virtualState.outputLabels[bps.destination] || `Dst ${bps.destination + 1}`;
+        const displayName = bps.name || srcLabel;
+        btn.textContent = displayName;
+        btn.title = `${displayName} — ${srcLabel} → ${dstLabel}`;
+
+        const bpsDisplayColor = bps.color || getLabelColor('input', bps.source);
+        if (bpsDisplayColor) {
+          btn.style.borderColor = bpsDisplayColor;
+          btn.style.color = bpsDisplayColor;
+          btn.style.background = bpsDisplayColor + '18';
+        }
+
+        if (virtualState.routing[bps.destination] === bps.source) {
+          btn.classList.add('active');
+        }
+
+        btn.addEventListener('click', async () => {
+          await api.setVirtualRoute(bps.destination, bps.source, bps.level ?? activeLevel);
+        });
+
+        btn.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          showBpsEditModal(bps);
+        });
+
+        btn.addEventListener('dragstart', (e) => {
+          btn.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/bps-id', bps.id);
+        });
+        btn.addEventListener('dragend', () => {
+          btn.classList.remove('dragging');
+          container.querySelectorAll('.bps-btn.drag-over').forEach(b => b.classList.remove('drag-over'));
+        });
+        btn.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          const dragging = container.querySelector('.bps-btn.dragging');
+          if (dragging && dragging !== btn) {
+            btn.classList.add('drag-over');
+          }
+        });
+        btn.addEventListener('dragleave', () => {
+          btn.classList.remove('drag-over');
+        });
+        btn.addEventListener('drop', async (e) => {
+          e.preventDefault();
+          btn.classList.remove('drag-over');
+          const draggedId = e.dataTransfer.getData('text/bps-id');
+          if (!draggedId || draggedId === bps.id) return;
+
+          const ids = bpsButtons.map(b => b.id);
+          const fromIndex = ids.indexOf(draggedId);
+          const toIndex = ids.indexOf(bps.id);
+          if (fromIndex < 0 || toIndex < 0) return;
+
+          ids.splice(fromIndex, 1);
+          ids.splice(toIndex, 0, draggedId);
+
+          const result = await api.reorderBpsButtons(ids);
+          if (result.success) {
+            bpsButtons = result.bpsButtons;
+            renderBpsButtons();
+          }
+        });
+
+        container.insertBefore(btn, addBtn);
+      });
+    }
+
+    function updateBpsActiveStates() {
+      const container = document.getElementById('bpsContainer');
+      if (!container) return;
+      container.querySelectorAll('.bps-btn').forEach(btn => {
+        const bpsId = btn.dataset.bpsId;
+        const bps = bpsButtons.find(b => b.id === bpsId);
+        if (bps) {
+          btn.classList.toggle('active', virtualState.routing[bps.destination] === bps.source);
+        }
+      });
+    }
+
+    function showBpsEditModal(existingBps) {
+      const overlay = document.createElement('div');
+      overlay.className = 'bps-edit-overlay';
+
+      const isEditing = !!existingBps;
+      const lastBps = !isEditing && bpsButtons.length > 0 ? bpsButtons[bpsButtons.length - 1] : null;
+      const selectedSource = existingBps ? existingBps.source : (lastBps ? lastBps.source : 0);
+      const selectedDest = existingBps ? existingBps.destination : (lastBps ? lastBps.destination : 0);
+      const selectedColor = existingBps ? (existingBps.color || '') : (lastBps ? (lastBps.color || '') : '');
+      const selectedName = existingBps ? (existingBps.name || '') : '';
+
+      // Build source options with router info
+      let srcOptions = '';
+      for (let i = 0; i < virtualState.inputs; i++) {
+        const label = virtualState.inputLabels[i] || `Input ${i + 1}`;
+        const router = virtualState.inputRouterMap[i] || 'A';
+        const physIdx = virtualState.inputPhysicalIndices?.[i] || (i + 1);
+        const sel = i === selectedSource ? ' selected' : '';
+        srcOptions += `<option value="${i}"${sel}>${physIdx} [${router}] | ${label}</option>`;
+      }
+
+      // Build destination options with router info
+      let dstOptions = '';
+      for (let o = 0; o < virtualState.outputs; o++) {
+        const label = virtualState.outputLabels[o] || `Output ${o + 1}`;
+        const router = virtualState.outputRouterMap[o] || 'A';
+        const physIdx = virtualState.outputPhysicalIndices?.[o] || (o + 1);
+        const sel = o === selectedDest ? ' selected' : '';
+        dstOptions += `<option value="${o}"${sel}>${physIdx} [${router}] | ${label}</option>`;
+      }
+
+      let swatchesHtml = `<div class="bps-color-swatch no-color${!selectedColor ? ' selected' : ''}" data-color=""></div>`;
+      SALVO_COLORS.forEach(c => {
+        swatchesHtml += `<div class="bps-color-swatch${selectedColor === c.value ? ' selected' : ''}" data-color="${c.value}" style="background:${c.value}" title="${c.name}"></div>`;
+      });
+
+      const deleteBtn = isEditing ? '<button class="bps-delete" data-action="delete">Delete</button>' : '';
+      const escapedName = selectedName.replace(/"/g, '&quot;');
+
+      overlay.innerHTML = `
+        <div class="bps-edit-dialog">
+          <h3>${isEditing ? 'Edit' : 'Add'} BPS Button</h3>
+          <label>Name <span style="color:#636e72;font-weight:normal">(optional — defaults to source label)</span></label>
+          <input type="text" id="bpsEditName" value="${escapedName}" placeholder="Leave blank for source label" style="width:100%;padding:6px 8px;border:1px solid rgba(255,255,255,0.2);border-radius:4px;background:rgba(0,0,0,0.3);color:#e0e0e0;font-size:0.85rem;margin-bottom:12px;outline:none;box-sizing:border-box;">
+          <label>Source</label>
+          <select id="bpsEditSource">${srcOptions}</select>
+          <label>Destination</label>
+          <select id="bpsEditDest">${dstOptions}</select>
+          <label>Colour</label>
+          <div class="bps-color-swatches">${swatchesHtml}</div>
+          <div class="bps-edit-buttons">
+            <button class="bps-save" data-action="save">Save</button>
+            ${deleteBtn}
+            <button data-action="cancel">Cancel</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+
+      let currentColor = selectedColor;
+      overlay.querySelectorAll('.bps-color-swatch').forEach(swatch => {
+        swatch.addEventListener('click', () => {
+          overlay.querySelectorAll('.bps-color-swatch').forEach(s => s.classList.remove('selected'));
+          swatch.classList.add('selected');
+          currentColor = swatch.dataset.color;
+        });
+      });
+
+      overlay.addEventListener('click', async (e) => {
+        const action = e.target.dataset.action;
+        if (!action) return;
+
+        if (action === 'cancel') {
+          overlay.remove();
+          return;
+        }
+
+        if (action === 'delete' && existingBps) {
+          const result = await api.deleteBpsButton(existingBps.id);
+          if (result.success) {
+            bpsButtons = result.bpsButtons;
+            renderBpsButtons();
+          }
+          overlay.remove();
+          return;
+        }
+
+        if (action === 'save') {
+          const source = parseInt(overlay.querySelector('#bpsEditSource').value);
+          const dest = parseInt(overlay.querySelector('#bpsEditDest').value);
+          const name = overlay.querySelector('#bpsEditName').value.trim();
+          const button = {
+            id: existingBps?.id || undefined,
+            name: name || null,
+            source: source,
+            destination: dest,
+            color: currentColor || null,
+            level: activeLevel
+          };
+          const result = await api.saveBpsButton(button);
+          if (result.success) {
+            bpsButtons = result.bpsButtons;
+            renderBpsButtons();
+          }
+          overlay.remove();
+          return;
+        }
+      });
+
+      overlay.addEventListener('mousedown', (e) => {
+        if (e.target === overlay) overlay.remove();
+      });
+    }
+
+    // ===========================================
     // EVENT LISTENERS
     // ===========================================
     function setupEventListeners() {
@@ -3332,6 +4204,19 @@
       document.getElementById('disconnectA').addEventListener('click', () => disconnectRouter('A'));
       document.getElementById('connectB').addEventListener('click', () => connectRouter('B'));
       document.getElementById('disconnectB').addEventListener('click', () => disconnectRouter('B'));
+
+      // Router history dropdowns
+      setupRouterHistoryBtn('A');
+      setupRouterHistoryBtn('B');
+      document.addEventListener('click', (e) => {
+        ['A', 'B'].forEach(id => {
+          const dropdown = document.getElementById(`routerHistoryDropdown${id}`);
+          const btn = document.getElementById(`routerHistoryBtn${id}`);
+          if (!dropdown.contains(e.target) && e.target !== btn) {
+            dropdown.classList.remove('visible');
+          }
+        });
+      });
 
       // Protocol changes
       document.getElementById('protocolA').addEventListener('change', () => updateProtocolUI('A'));
@@ -3350,8 +4235,11 @@
       });
 
       // Settings
-      document.getElementById('autoConnect').addEventListener('change', (e) => {
-        api.setAutoConnect(e.target.checked);
+      document.getElementById('autoConnectA').addEventListener('change', (e) => {
+        api.setAutoConnect('A', e.target.checked);
+      });
+      document.getElementById('autoConnectB').addEventListener('change', (e) => {
+        api.setAutoConnect('B', e.target.checked);
       });
       document.getElementById('autoReconnect').addEventListener('change', (e) => {
         api.setAutoReconnect(e.target.checked);
@@ -3588,6 +4476,7 @@
         if (e.button !== 0) return; // left click only
         const item = e.target.closest('.label-item');
         if (!item || e.target.matches('input')) return;
+        if (e.target.closest('.label-color-btn')) return; // colour swatch handles its own click
         if (document.activeElement?.matches('input')) return; // text selection in progress
         const type = item.dataset.type;
         const index = parseInt(item.dataset.index);
@@ -3646,7 +4535,7 @@
 
       document.addEventListener('click', (e) => {
         const item = e.target.closest('.label-item');
-        if (item && !e.target.matches('input') && !document.activeElement?.matches('input')) {
+        if (item && !e.target.matches('input') && !e.target.closest('.label-color-btn') && !document.activeElement?.matches('input')) {
           const type = item.dataset.type;
           const index = parseInt(item.dataset.index);
           const key = `${type}-${index}`;
@@ -3700,6 +4589,36 @@
       });
       document.getElementById('exportSalvosBtn').addEventListener('click', exportSalvos);
       document.getElementById('importSalvosBtn').addEventListener('click', importSalvos);
+
+      // BPS add button
+      document.getElementById('bpsAddBtn').addEventListener('click', () => showBpsEditModal(null));
+
+      // XY grid search/filter
+      document.querySelectorAll('.xy-search').forEach(input => {
+        input.addEventListener('input', () => {
+          input.closest('.xy-search-wrap')?.classList.toggle('has-value', input.value.length > 0);
+          applyXYFilter();
+        });
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            input.value = '';
+            input.closest('.xy-search-wrap')?.classList.remove('has-value');
+            applyXYFilter();
+            input.blur();
+          }
+        });
+      });
+      document.querySelectorAll('.xy-search-clear').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const input = document.getElementById(btn.dataset.for);
+          if (input) {
+            input.value = '';
+            input.closest('.xy-search-wrap')?.classList.remove('has-value');
+            applyXYFilter();
+            input.focus();
+          }
+        });
+      });
 
       // Salvo destinations - drag to select
       {
@@ -3910,6 +4829,12 @@
         routerAConnected = true;
         setConnectionStatus('A', 'connected', `Connected (${state.inputs}x${state.outputs})`);
         onStateChange();
+        api.addRouterToHistory({
+          host: document.getElementById('hostA').value,
+          port: parseInt(document.getElementById('portA').value),
+          protocol: document.getElementById('protocolA').value,
+          name: state.friendlyName || ''
+        });
       });
       api.onRouterADisconnected(() => {
         routerAConnected = false;
@@ -3936,6 +4861,12 @@
         routerBConnected = true;
         setConnectionStatus('B', 'connected', `Connected (${state.inputs}x${state.outputs})`);
         onStateChange();
+        api.addRouterToHistory({
+          host: document.getElementById('hostB').value,
+          port: parseInt(document.getElementById('portB').value),
+          protocol: document.getElementById('protocolB').value,
+          name: state.friendlyName || ''
+        });
       });
       api.onRouterBDisconnected(() => {
         routerBConnected = false;
@@ -3970,6 +4901,14 @@
         }
         else if (activeTab === 'labels') renderLabels();
         else if (activeTab === 'salvos') renderSalvoDestinations();
+        updateBpsActiveStates();
+      });
+
+      // Label colours
+      api.onLabelColorsChanged((data) => {
+        labelColors = data;
+        if (activeTab === 'labels') renderLabels();
+        else if (activeTab === 'xy') renderXYGrid();
       });
 
       // Tie-line state
@@ -3997,6 +4936,8 @@
       else if (activeTab === 'labels') renderLabels();
       else if (activeTab === 'salvos') renderSalvoDestinations();
       updateTieLineStatusBar();
+      renderBpsButtons();
+      renderSalvoQuickButtons();
     }
 
     // ===========================================

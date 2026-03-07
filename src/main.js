@@ -20,6 +20,22 @@ let virtualRouter = null;
 let videohubBridge = null;
 let settings = {};
 
+// macOS Local Network TCC probe — triggers the system permission prompt
+let localNetworkProbed = false;
+function probeLocalNetwork() {
+  if (process.platform !== 'darwin' || localNetworkProbed) return;
+  localNetworkProbed = true;
+  try {
+    const probePath = path.join(app.isPackaged
+      ? process.resourcesPath
+      : path.join(__dirname, 'native'), 'probe_local_network.node');
+    const addon = require(probePath);
+    addon.probe('_blackmagic._tcp');
+  } catch (e) {
+    console.error('Local network probe failed:', e.message);
+  }
+}
+
 // Check for updates against GitHub releases
 async function checkForUpdates() {
   try {
@@ -93,7 +109,8 @@ function loadSettings() {
       routerB: { host: '127.0.0.1', port: 9991, protocol: 'videohub', levels: 1, name: 'Router B' },
       tieLines: { aToB: [], bToA: [] },
       salvos: [],
-      autoConnect: false,
+      autoConnectA: false,
+      autoConnectB: false,
       autoReconnect: true,
       autoProtect: false,
       activeLevel: 0,
@@ -106,6 +123,17 @@ function loadSettings() {
   if (!settings.routerA) settings.routerA = { host: '127.0.0.1', port: 9990, protocol: 'videohub', levels: 1, name: 'Router A' };
   if (!settings.routerB) settings.routerB = { host: '127.0.0.1', port: 9991, protocol: 'videohub', levels: 1, name: 'Router B' };
   if (!settings.remoteAccess) settings.remoteAccess = { enabled: false, port: 9990, autoStart: false, friendlyName: 'TieLineManager Virtual Router' };
+  if (!settings.inputLabelColors) settings.inputLabelColors = {};
+  if (!settings.outputLabelColors) settings.outputLabelColors = {};
+  if (!settings.bpsButtons) settings.bpsButtons = [];
+  if (!settings.routerHistory) settings.routerHistory = [];
+
+  // Migrate old single autoConnect to per-router
+  if (settings.autoConnect !== undefined) {
+    settings.autoConnectA = settings.autoConnect;
+    settings.autoConnectB = settings.autoConnect;
+    delete settings.autoConnect;
+  }
 }
 
 function saveSettings() {
@@ -331,6 +359,7 @@ function setupIPC() {
   // Connection management
   ipcMain.handle('connect-router', async (event, routerId, config) => {
     try {
+      probeLocalNetwork();
       const routerConfig = routerId === 'A' ? settings.routerA : settings.routerB;
       Object.assign(routerConfig, config);
       saveSettings();
@@ -506,6 +535,116 @@ function setupIPC() {
     return { success: true };
   });
 
+  // Label colours
+  ipcMain.handle('get-label-colors', () => {
+    return {
+      inputLabelColors: settings.inputLabelColors || {},
+      outputLabelColors: settings.outputLabelColors || {}
+    };
+  });
+
+  ipcMain.handle('set-label-color', (event, type, index, color) => {
+    const key = type === 'input' ? 'inputLabelColors' : 'outputLabelColors';
+    if (!settings[key]) settings[key] = {};
+    if (color) {
+      settings[key][index] = color;
+    } else {
+      delete settings[key][index];
+    }
+    saveSettings();
+    sendToRenderer('label-colors-changed', {
+      inputLabelColors: settings.inputLabelColors || {},
+      outputLabelColors: settings.outputLabelColors || {}
+    });
+    return { success: true };
+  });
+
+  ipcMain.handle('set-label-colors-bulk', (event, type, colorMap) => {
+    const key = type === 'input' ? 'inputLabelColors' : 'outputLabelColors';
+    if (!settings[key]) settings[key] = {};
+    Object.entries(colorMap).forEach(([index, color]) => {
+      if (color) {
+        settings[key][index] = color;
+      } else {
+        delete settings[key][index];
+      }
+    });
+    saveSettings();
+    sendToRenderer('label-colors-changed', {
+      inputLabelColors: settings.inputLabelColors || {},
+      outputLabelColors: settings.outputLabelColors || {}
+    });
+    return { success: true };
+  });
+
+  // BPS buttons
+  ipcMain.handle('get-bps-buttons', () => {
+    return settings.bpsButtons || [];
+  });
+
+  ipcMain.handle('save-bps-button', (event, button) => {
+    if (!settings.bpsButtons) settings.bpsButtons = [];
+    if (button.id) {
+      const idx = settings.bpsButtons.findIndex(b => b.id === button.id);
+      if (idx >= 0) {
+        settings.bpsButtons[idx] = button;
+      } else {
+        settings.bpsButtons.push(button);
+      }
+    } else {
+      button.id = `bps_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      settings.bpsButtons.push(button);
+    }
+    saveSettings();
+    return { success: true, bpsButtons: settings.bpsButtons };
+  });
+
+  ipcMain.handle('delete-bps-button', (event, buttonId) => {
+    if (!settings.bpsButtons) return { success: false };
+    settings.bpsButtons = settings.bpsButtons.filter(b => b.id !== buttonId);
+    saveSettings();
+    return { success: true, bpsButtons: settings.bpsButtons };
+  });
+
+  ipcMain.handle('reorder-bps-buttons', (event, orderedIds) => {
+    if (!settings.bpsButtons) return { success: false };
+    const ordered = orderedIds.map(id => settings.bpsButtons.find(b => b.id === id)).filter(Boolean);
+    settings.bpsButtons = ordered;
+    saveSettings();
+    return { success: true, bpsButtons: settings.bpsButtons };
+  });
+
+  // Router history
+  ipcMain.handle('get-router-history', () => {
+    return settings.routerHistory || [];
+  });
+
+  ipcMain.handle('add-router-to-history', (event, router) => {
+    if (!settings.routerHistory) settings.routerHistory = [];
+    const key = `${router.host}:${router.port}:${router.protocol}`;
+    settings.routerHistory = settings.routerHistory.filter(r =>
+      `${r.host}:${r.port}:${r.protocol}` !== key
+    );
+    settings.routerHistory.unshift({
+      host: router.host,
+      port: router.port,
+      protocol: router.protocol,
+      name: router.name || '',
+      lastConnected: new Date().toISOString()
+    });
+    settings.routerHistory = settings.routerHistory.slice(0, 20);
+    saveSettings();
+    return settings.routerHistory;
+  });
+
+  ipcMain.handle('remove-router-from-history', (event, index) => {
+    if (settings.routerHistory && index >= 0 && index < settings.routerHistory.length) {
+      settings.routerHistory.splice(index, 1);
+      saveSettings();
+    }
+    return settings.routerHistory || [];
+  });
+
   // Settings
   ipcMain.handle('get-settings', () => settings);
 
@@ -515,8 +654,9 @@ function setupIPC() {
     return { success: true };
   });
 
-  ipcMain.handle('set-auto-connect', (event, enabled) => {
-    settings.autoConnect = enabled;
+  ipcMain.handle('set-auto-connect', (event, routerId, enabled) => {
+    if (routerId === 'A') settings.autoConnectA = enabled;
+    else if (routerId === 'B') settings.autoConnectB = enabled;
     saveSettings();
     return { success: true };
   });
@@ -535,6 +675,7 @@ function setupIPC() {
 
   // VideoHub Bridge (Remote Access)
   ipcMain.handle('start-bridge', async () => {
+    probeLocalNetwork();
     return startBridge();
   });
 

@@ -25,10 +25,27 @@ contextBridge.exposeInMainWorld('tieLineManager', {
   setInputLabel: (virtualIndex, label) => ipcRenderer.invoke('set-input-label', virtualIndex, label),
   setOutputLabel: (virtualIndex, label) => ipcRenderer.invoke('set-output-label', virtualIndex, label),
 
+  // Label colours
+  getLabelColors: () => ipcRenderer.invoke('get-label-colors'),
+  setLabelColor: (type, index, color) => ipcRenderer.invoke('set-label-color', type, index, color),
+  setLabelColorsBulk: (type, colorMap) => ipcRenderer.invoke('set-label-colors-bulk', type, colorMap),
+  onLabelColorsChanged: (cb) => ipcRenderer.on('label-colors-changed', (_, data) => cb(data)),
+
+  // BPS buttons
+  getBpsButtons: () => ipcRenderer.invoke('get-bps-buttons'),
+  saveBpsButton: (button) => ipcRenderer.invoke('save-bps-button', button),
+  deleteBpsButton: (buttonId) => ipcRenderer.invoke('delete-bps-button', buttonId),
+  reorderBpsButtons: (orderedIds) => ipcRenderer.invoke('reorder-bps-buttons', orderedIds),
+
+  // Router history
+  getRouterHistory: () => ipcRenderer.invoke('get-router-history'),
+  addRouterToHistory: (router) => ipcRenderer.invoke('add-router-to-history', router),
+  removeRouterFromHistory: (index) => ipcRenderer.invoke('remove-router-from-history', index),
+
   // Settings
   getSettings: () => ipcRenderer.invoke('get-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
-  setAutoConnect: (enabled) => ipcRenderer.invoke('set-auto-connect', enabled),
+  setAutoConnect: (routerId, enabled) => ipcRenderer.invoke('set-auto-connect', routerId, enabled),
   setAutoReconnect: (enabled) => ipcRenderer.invoke('set-auto-reconnect', enabled),
   setAutoProtect: (enabled) => ipcRenderer.invoke('set-auto-protect', enabled),
 
