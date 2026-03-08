@@ -2119,6 +2119,7 @@
 
       // Load BPS buttons
       bpsButtons = await api.getBpsButtons();
+      renderBpsButtons();
 
       // Switch to saved tab
       if (settings.activeTab) switchTab(settings.activeTab);
