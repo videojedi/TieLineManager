@@ -16,19 +16,29 @@ Tie-Line Manager automates this process:
 - Automatically allocates tie-lines when cross-router routes are requested
 - Presents both routers as one seamless virtual router
 
+## Latest Release: v1.6.0
+
+Download the latest installers from the [GitHub Releases](https://github.com/videojedi/TieLineManager/releases/latest) page.
+
 ## Features
 
 - **Virtual Router View** - XY crosspoint grid showing combined inputs and outputs from both routers as one matrix
+- **Transpose Grid** - Optionally swap sources and destinations axes for preferred viewing orientation
+- **Crosshair Hover** - Row and column highlighting when hovering over crosspoints for easier grid navigation
 - **Multiple Protocol Support** - Connect to routers via Blackmagic VideoHub, SW-P-08 (Calrec/SAM/Grass Valley), or GV Native protocols
 - **Bi-directional Tie-Lines** - Configure tie-lines in both A→B and B→A directions
 - **Automatic Tie-Line Allocation** - Cross-router routes automatically claim and release tie-lines as needed
 - **Tie-Line Port Labeling** - Tie-line ports are automatically labeled on the physical routers for easy identification
-- **Salvos** - Capture and recall routing presets with destination selection
+- **Salvos** - Capture and recall routing presets with editable route preview
 - **Output Locks** - Lock destinations to prevent accidental route changes
 - **Label Editing** - Rename inputs and outputs with fill and increment support
+- **Label Colours** - Colour-code individual labels using a resistor colour code palette
 - **Drag-to-Route** - Click and drag across the XY grid for quick sequential routing
+- **Filter Inputs** - Range/list syntax in filter boxes (e.g. "1-10,17,20")
 - **Physical Port Numbers** - See the actual router port numbers alongside virtual indices
 - **Router Colour Coding** - Inputs and outputs colour-coded by which physical router they belong to
+- **Router Connection History** - Quick-connect dropdown remembering previous router connections
+- **BPS Buttons** - Bulk Protect Skip buttons for quick routing that bypass protect mode
 - **Import/Export Salvos** - CSV import and export with duplicate resolution
 - **Auto-Connect** - Automatically connect to configured routers on launch
 - **Auto-Reconnect** - Automatically reconnect if a router connection drops
