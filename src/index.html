@@ -589,7 +589,7 @@
       top: 20px;
       min-width: 28px;
       max-width: 28px;
-      height: 100px;
+      height: 70px;
       vertical-align: bottom;
       padding-bottom: 4px;
       text-align: center;
@@ -606,7 +606,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-height: 95px;
+      max-height: 65px;
       display: inline-block;
     }
 
@@ -630,11 +630,16 @@
       max-width: 140px;
     }
 
-    /* Hover highlight for row/column headers */
+    /* Hover crosshair highlight */
     .xy-grid th.input-header.highlight { background: #143d28; }
     .xy-grid th.input-header.highlight .header-text { color: #fff; }
-    .xy-grid th.output-header.highlight { background: #3d1414; }
-    .xy-grid th.output-header.highlight .header-text { color: #fff; }
+    .xy-grid th.input-index.highlight { background: #143d28; color: #fff; }
+    .xy-grid th.output-header.highlight,
+    .xy-grid th.output-header.highlight-row { background: #3d1414; }
+    .xy-grid th.output-header.highlight .header-text,
+    .xy-grid th.output-header.highlight-row .header-text { color: #fff; }
+    .xy-grid td.output-index.highlight-row { background: #3d1414; color: #fff; }
+    .xy-grid td.lock-cell.highlight-row { background: #3d1414; }
 
     /* Router color coding in headers */
     .xy-grid th.router-a .header-text { color: #fff; }
@@ -648,6 +653,75 @@
     .xy-grid th.output-separator,
     .xy-grid tr.output-separator td {
       border-top: 2px solid rgba(255,255,255,0.3) !important;
+    }
+
+    /* Transposed mode — no lock column in rows */
+    .xy-grid-container.transposed .xy-grid td.output-index {
+      left: 0;
+    }
+    .xy-grid-container.transposed .xy-grid th.output-header {
+      left: 24px;
+    }
+    /* In transposed mode, constrain row labels (inputs) width */
+    .xy-grid-container.transposed .xy-grid th.output-header {
+      max-width: 110px;
+      overflow: hidden;
+    }
+    .xy-grid-container.transposed .xy-grid th.output-header .header-text {
+      max-width: 100px;
+    }
+    /* Shift index and label rows down to account for lock row at top */
+    .xy-grid-container.transposed .xy-grid .index-row th.input-index {
+      top: 28px;
+    }
+    .xy-grid-container.transposed .xy-grid th.input-header {
+      top: 48px;
+    }
+
+    /* Lock buttons in column header row (transposed mode) — first row */
+    .xy-grid .lock-header-row th:not(.corner-cell) {
+      top: 0;
+      position: sticky;
+      background: #151525;
+      z-index: 2;
+      padding: 2px 0;
+      min-width: 28px;
+      max-width: 28px;
+    }
+    .xy-grid .lock-header-row .xy-lock-btn {
+      width: 22px;
+      height: 22px;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      background: transparent;
+      cursor: pointer;
+      padding: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 2px auto;
+      transition: all 0.2s;
+      color: #555;
+    }
+    .xy-grid .lock-header-row .xy-lock-btn svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+    .xy-grid .lock-header-row .xy-lock-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #aaa;
+    }
+    .xy-grid .lock-header-row .xy-lock-btn.locked {
+      background: rgba(255, 107, 107, 0.2);
+      border-color: #ff6b6b;
+      color: #ff6b6b;
+    }
+    .xy-grid .lock-header-row .xy-lock-btn.locked-other {
+      background: rgba(255, 165, 0, 0.2);
+      border-color: orange;
+      color: orange;
+      cursor: pointer;
     }
 
     .xy-grid td {
@@ -1288,13 +1362,37 @@
 
     .salvo-route-row {
       display: flex;
+      align-items: center;
       padding: 3px 0;
       color: #aaa;
+      gap: 4px;
     }
     .salvo-route-row .route-output { color: #e0e0e0; }
-    .salvo-route-row .route-arrow { color: #666; margin: 0 6px; }
+    .salvo-route-row .route-arrow { color: #666; margin: 0 2px; flex-shrink: 0; }
     .salvo-route-row .route-input { color: #e0e0e0; }
-    .salvo-route-row .route-cross { color: #a273eb; font-size: 0.7rem; margin-left: 6px; }
+    .salvo-route-row .route-cross { color: #a273eb; font-size: 0.7rem; margin-left: 4px; }
+    .salvo-route-row select {
+      flex: 1; min-width: 0;
+      padding: 3px 4px; font-size: 0.78rem;
+      background: rgba(0,0,0,0.3); color: #e0e0e0;
+      border: 1px solid rgba(255,255,255,0.15); border-radius: 3px;
+    }
+    .salvo-route-row select:focus { outline: none; border-color: #4a69bd; }
+    .salvo-route-row .route-remove {
+      background: none; border: none; color: #666; cursor: pointer;
+      font-size: 14px; padding: 0 2px; flex-shrink: 0; line-height: 1;
+    }
+    .salvo-route-row .route-remove:hover { color: #e74c3c; }
+    .salvo-route-add {
+      display: flex; align-items: center; justify-content: center;
+      padding: 4px 0; margin-top: 4px;
+    }
+    .salvo-route-add button {
+      background: rgba(255,255,255,0.06); border: 1px dashed rgba(255,255,255,0.15);
+      border-radius: 4px; color: #888; cursor: pointer; font-size: 0.75rem;
+      padding: 3px 12px; width: 100%;
+    }
+    .salvo-route-add button:hover { background: rgba(255,255,255,0.1); color: #ccc; }
 
     .salvo-disclosure {
       font-size: 0.65rem;
@@ -1744,6 +1842,10 @@
             <input type="checkbox" id="autoProtect">
             <label for="autoProtect">Auto-protect on XY page</label>
           </div>
+          <div class="checkbox-group" title="Swap sources and destinations axes on the XY grid">
+            <input type="checkbox" id="xyTranspose">
+            <label for="xyTranspose">Transpose XY grid (sources as rows)</label>
+          </div>
         </div>
 
         <!-- Remote Access -->
@@ -1933,6 +2035,7 @@
     let dragStart = null;
     let isDragging = false;
     let xyProtectMode = false;
+    let xyTransposed = false;
     let autoProtectTimer = null;
     const AUTO_PROTECT_DELAY = 5 * 60 * 1000; // 5 minutes
     const UNDO_HISTORY_MAX = 50;
@@ -1990,6 +2093,15 @@
       // Enable protect mode by default if auto-protect is on
       if (settings.autoProtect) {
         setProtectMode(true);
+      }
+
+      // Restore transpose setting
+      document.getElementById('xyTranspose').checked = settings.xyTransposed || false;
+      if (settings.xyTransposed) {
+        xyTransposed = true;
+        document.getElementById('xyGridContainer').classList.add('transposed');
+        document.getElementById('xySearchSrc').placeholder = 'Filter destinations... (e.g. 1-10,17,20)';
+        document.getElementById('xySearchDst').placeholder = 'Filter sources... (e.g. 1-10,17,20)';
       }
 
       updateProtocolUI('A');
@@ -2458,9 +2570,12 @@
       }
 
       // Update labels if changed
+      // In transposed mode, inputs are rows (th.output-header) and outputs are columns (th.input-header)
+      const inputHeaderClass = xyTransposed ? 'output-header' : 'input-header';
+      const outputHeaderClass = xyTransposed ? 'input-header' : 'output-header';
       for (let i = 0; i < inputs; i++) {
         if (prev.inputLabels[i] !== next.inputLabels[i]) {
-          const header = grid.querySelector(`th.input-header[data-input="${i}"] .header-text`);
+          const header = grid.querySelector(`th.${inputHeaderClass}[data-input="${i}"] .header-text`);
           if (header) {
             header.textContent = next.inputLabels[i] || `Input ${i + 1}`;
             header.title = next.inputLabels[i] || `Input ${i + 1}`;
@@ -2471,7 +2586,7 @@
       }
       for (let o = 0; o < outputs; o++) {
         if (prev.outputLabels[o] !== next.outputLabels[o]) {
-          const header = grid.querySelector(`th.output-header[data-output="${o}"] .header-text`);
+          const header = grid.querySelector(`th.${outputHeaderClass}[data-output="${o}"] .header-text`);
           if (header) {
             header.textContent = next.outputLabels[o] || `Output ${o + 1}`;
             header.title = next.outputLabels[o] || `Output ${o + 1}`;
@@ -2501,74 +2616,130 @@
       const hasAtoBTieLines = (tieLineConfig.aToB || []).length > 0;
       const hasBtoATieLines = (tieLineConfig.bToA || []).length > 0;
 
-      // Header row 1: Input index numbers with minimap in corner (rowspan=2, colspan=3: lock + index + label)
-      let html = '<thead><tr class="index-row"><th class="corner-cell" rowspan="2" colspan="3"><div class="xy-minimap" id="xyMinimap"><canvas id="xyMinimapCanvas"></canvas><div class="xy-minimap-viewport" id="xyMinimapViewport"></div></div></th>';
-      for (let i = 0; i < inputs; i++) {
-        const isSep = (i === routerAInputCount && routerBInputCount > 0);
-        const physIdx = inputPhysicalIndices?.[i] || (i + 1);
-        html += `<th class="input-index${isSep ? ' input-separator' : ''}" data-input="${i}">${physIdx}</th>`;
+      // Transposed mode swaps which dimension is columns vs rows
+      const T = xyTransposed;
+      const colCount    = T ? outputs : inputs;
+      const rowCount    = T ? inputs : outputs;
+      const colLabels   = T ? outputLabels : inputLabels;
+      const rowLabels   = T ? inputLabels : outputLabels;
+      const colRouterMap = T ? outputRouterMap : inputRouterMap;
+      const rowRouterMap = T ? inputRouterMap : outputRouterMap;
+      const colPhysIdx  = T ? outputPhysicalIndices : inputPhysicalIndices;
+      const rowPhysIdx  = T ? inputPhysicalIndices : outputPhysicalIndices;
+      const routerAColCount = T ? routerAOutputCount : routerAInputCount;
+      const routerBColCount = T ? routerBOutputCount : routerBInputCount;
+      const routerARowCount = T ? routerAInputCount : routerAOutputCount;
+      const routerBRowCount = T ? routerBInputCount : routerBOutputCount;
+      const colType = T ? 'output' : 'input';
+      const rowType = T ? 'input' : 'output';
+
+      // Toggle transposed class on container
+      document.getElementById('xyGridContainer').classList.toggle('transposed', T);
+
+      // Corner cell spans: normal = rowspan 2, colspan 3 (lock+index+label); transposed = rowspan 3, colspan 2 (index+label, lock row in header)
+      const cornerRowspan = T ? 3 : 2;
+      const cornerColspan = T ? 2 : 3;
+
+      // Transposed header order: lock row, index row, label row
+      // Normal header order: index row, label row
+      let html = '<thead>';
+
+      // Lock header row (transposed only) — row 1
+      if (T) {
+        html += `<tr class="lock-header-row"><th class="corner-cell" rowspan="${cornerRowspan}" colspan="${cornerColspan}"><div class="xy-minimap" id="xyMinimap"><canvas id="xyMinimapCanvas"></canvas><div class="xy-minimap-viewport" id="xyMinimapViewport"></div></div></th>`;
+        for (let c = 0; c < colCount; c++) {
+          const isSep = (c === routerAColCount && routerBColCount > 0);
+          const lockState = outputLocks?.[c] || 'U';
+          const isLocked = lockState === 'O' || lockState === 'L';
+          const isLockedByOther = lockState === 'L';
+          const lockBtnClass = isLocked ? (isLockedByOther ? 'locked-other' : 'locked') : '';
+          const lockIcon = isLocked ? LOCK_ICON_LOCKED : LOCK_ICON_UNLOCKED;
+          const lockTitle = isLockedByOther ? 'Locked by another client (hold to force unlock)' : (isLocked ? 'Click to unlock' : 'Click to lock');
+          html += `<th class="${isSep ? 'input-separator' : ''}" data-output="${c}"><button class="xy-lock-btn ${lockBtnClass}" data-output="${c}" title="${lockTitle}">${lockIcon}</button></th>`;
+        }
+        html += '</tr>';
+      }
+
+      // Index row
+      if (!T) {
+        html += `<tr class="index-row"><th class="corner-cell" rowspan="${cornerRowspan}" colspan="${cornerColspan}"><div class="xy-minimap" id="xyMinimap"><canvas id="xyMinimapCanvas"></canvas><div class="xy-minimap-viewport" id="xyMinimapViewport"></div></div></th>`;
+      } else {
+        html += '<tr class="index-row">';
+      }
+      for (let c = 0; c < colCount; c++) {
+        const isSep = (c === routerAColCount && routerBColCount > 0);
+        const physIdx = colPhysIdx?.[c] || (c + 1);
+        html += `<th class="input-index${isSep ? ' input-separator' : ''}" data-${colType}="${c}">${physIdx}</th>`;
       }
       html += '</tr>';
 
-      // Header row 2: Input label headers (vertical text)
+      // Label row
       html += '<tr>';
-      for (let i = 0; i < inputs; i++) {
-        const router = inputRouterMap[i] || 'A';
-        const isSep = (i === routerAInputCount && routerBInputCount > 0);
-        const label = inputLabels[i] || `Input ${i + 1}`;
-        const inputColor = getLabelColor('input', i);
-        const inputColorStyle = inputColor ? ` style="color:${inputColor}"` : '';
-        html += `<th class="input-header router-${router.toLowerCase()}${isSep ? ' input-separator' : ''}" data-input="${i}">
-          <span class="header-text" title="${label}"${inputColorStyle}>${label}</span></th>`;
+      for (let c = 0; c < colCount; c++) {
+        const router = colRouterMap[c] || 'A';
+        const isSep = (c === routerAColCount && routerBColCount > 0);
+        const label = colLabels[c] || `${T ? 'Output' : 'Input'} ${c + 1}`;
+        const color = getLabelColor(colType, c);
+        const colorStyle = color ? ` style="color:${color}"` : '';
+        html += `<th class="input-header router-${router.toLowerCase()}${isSep ? ' input-separator' : ''}" data-${colType}="${c}">
+          <span class="header-text" title="${label}"${colorStyle}>${label}</span></th>`;
       }
-      html += '</tr></thead><tbody>';
+      html += '</tr>';
 
-      // Body rows: one per output (lock + index + label + crosspoints)
-      for (let o = 0; o < outputs; o++) {
-        const router = outputRouterMap[o] || 'A';
-        const isSep = (o === routerAOutputCount && routerBOutputCount > 0);
-        const label = outputLabels[o] || `Output ${o + 1}`;
+      html += '</thead><tbody>';
 
-        const lockState = outputLocks?.[o] || 'U';
-        const isLocked = lockState === 'O' || lockState === 'L';
-        const isLockedByOther = lockState === 'L';
-        const lockBtnClass = isLocked ? (isLockedByOther ? 'locked-other' : 'locked') : '';
-        const lockIcon = isLocked ? LOCK_ICON_LOCKED : LOCK_ICON_UNLOCKED;
-        const lockTitle = isLockedByOther ? 'Locked by another client (hold to force unlock)' : (isLocked ? 'Click to unlock' : 'Click to lock');
+      // Body rows
+      for (let r = 0; r < rowCount; r++) {
+        const router = rowRouterMap[r] || 'A';
+        const isSep = (r === routerARowCount && routerBRowCount > 0);
+        const label = rowLabels[r] || `${T ? 'Input' : 'Output'} ${r + 1}`;
 
-        html += `<tr data-output="${o}" class="${isSep ? 'output-separator' : ''}">`;
+        html += `<tr data-${rowType}="${r}" class="${isSep ? 'output-separator' : ''}">`;
 
-        // Lock cell
-        html += `<td class="lock-cell${isSep ? ' output-separator' : ''}"><button class="xy-lock-btn ${lockBtnClass}" data-output="${o}" title="${lockTitle}">${lockIcon}</button></td>`;
+        // Lock cell (normal mode only — outputs are rows)
+        if (!T) {
+          const lockState = outputLocks?.[r] || 'U';
+          const isLocked = lockState === 'O' || lockState === 'L';
+          const isLockedByOther = lockState === 'L';
+          const lockBtnClass = isLocked ? (isLockedByOther ? 'locked-other' : 'locked') : '';
+          const lockIcon = isLocked ? LOCK_ICON_LOCKED : LOCK_ICON_UNLOCKED;
+          const lockTitle = isLockedByOther ? 'Locked by another client (hold to force unlock)' : (isLocked ? 'Click to unlock' : 'Click to lock');
+          html += `<td class="lock-cell${isSep ? ' output-separator' : ''}"><button class="xy-lock-btn ${lockBtnClass}" data-output="${r}" title="${lockTitle}">${lockIcon}</button></td>`;
+        }
 
-        // Row index (physical port number)
-        const physOutIdx = outputPhysicalIndices?.[o] || (o + 1);
-        html += `<td class="output-index${isSep ? ' output-separator' : ''}">${physOutIdx}</td>`;
+        // Row index
+        const physRowIdx = rowPhysIdx?.[r] || (r + 1);
+        html += `<td class="output-index${isSep ? ' output-separator' : ''}">${physRowIdx}</td>`;
 
-        // Output label header
-        const outputColor = getLabelColor('output', o);
-        const outputColorStyle = outputColor ? ` style="color:${outputColor}"` : '';
-        html += `<th class="output-header router-${router.toLowerCase()}${isSep ? ' output-separator' : ''}" data-output="${o}">
-            <span class="header-text" title="${label}"${outputColorStyle}>${label}</span></th>`;
+        // Row label header
+        const rowColor = getLabelColor(rowType, r);
+        const rowColorStyle = rowColor ? ` style="color:${rowColor}"` : '';
+        html += `<th class="output-header router-${router.toLowerCase()}${isSep ? ' output-separator' : ''}" data-${rowType}="${r}">
+            <span class="header-text" title="${label}"${rowColorStyle}>${label}</span></th>`;
 
-        for (let i = 0; i < inputs; i++) {
-          const oRouter = outputRouterMap[o] || 'A';
-          const iRouter = inputRouterMap[i] || 'A';
-          const isActive = routing[o] === i;
+        // Crosspoint cells
+        for (let c = 0; c < colCount; c++) {
+          const output = T ? c : r;
+          const input  = T ? r : c;
+          const oRouter = outputRouterMap[output] || 'A';
+          const iRouter = inputRouterMap[input] || 'A';
+          const isActive = routing[output] === input;
           const isCross = isActive && oRouter !== iRouter;
-          const isInSep = (i === routerAInputCount && routerBInputCount > 0);
+          const isColSep = (c === routerAColCount && routerBColCount > 0);
 
-          // Check if this is a cross-router cell with no tie-lines
           const isNoTieLines = (oRouter === 'A' && iRouter === 'B' && !hasAtoBTieLines)
                             || (oRouter === 'B' && iRouter === 'A' && !hasBtoATieLines);
+
+          const lockState = outputLocks?.[output] || 'U';
+          const isLocked = lockState === 'O' || lockState === 'L';
 
           let classes = '';
           if (isNoTieLines) classes += ' no-tielines';
           else if (isActive) classes += isCross ? ' active-cross' : ' active';
-          if (isInSep) classes += ' input-separator';
+          if (isColSep) classes += ' input-separator';
           if (isLocked && !isNoTieLines) classes += ' locked';
 
-          html += `<td class="${classes.trim()}" data-output="${o}" data-input="${i}"></td>`;
+          html += `<td class="${classes.trim()}" data-output="${output}" data-input="${input}"></td>`;
         }
         html += '</tr>';
       }
@@ -2685,38 +2856,59 @@
       const srcFilter = parseFilterQuery(srcQuery);
       const dstFilter = parseFilterQuery(dstQuery);
 
-      // Build set of visible input indices
-      const visibleInputs = new Set();
-      for (let i = 0; i < inputs; i++) {
-        const physIdx = String(inputPhysicalIndices?.[i] || (i + 1));
-        const label = inputLabels[i] || `Input ${i + 1}`;
+      const T = xyTransposed;
+      // Columns: normal=inputs, transposed=outputs; srcFilter filters columns
+      // Rows: normal=outputs, transposed=inputs; dstFilter filters rows
+      const colCount = T ? outputs : inputs;
+      const rowCount = T ? inputs : outputs;
+      const colLabels = T ? outputLabels : inputLabels;
+      const rowLabels = T ? inputLabels : outputLabels;
+      const colPhysIdx = T ? outputPhysicalIndices : inputPhysicalIndices;
+      const rowPhysIdx = T ? inputPhysicalIndices : outputPhysicalIndices;
+      const colType = T ? 'output' : 'input';
+      const rowType = T ? 'input' : 'output';
+      const colDefaultLabel = T ? 'Output' : 'Input';
+      const rowDefaultLabel = T ? 'Input' : 'Output';
+
+      // Build set of visible column indices
+      const visibleCols = new Set();
+      for (let c = 0; c < colCount; c++) {
+        const physIdx = String(colPhysIdx?.[c] || (c + 1));
+        const label = colLabels[c] || `${colDefaultLabel} ${c + 1}`;
         if (matchesFilter(srcFilter, physIdx, label)) {
-          visibleInputs.add(i);
+          visibleCols.add(c);
         }
       }
 
-      // Filter column headers (index row + label row)
+      // Filter column headers (index row + label row + lock header row in transposed)
       grid.querySelectorAll('th.input-index').forEach(cell => {
-        const idx = parseInt(cell.dataset.input);
-        cell.style.display = visibleInputs.has(idx) ? '' : 'none';
+        const idx = parseInt(cell.dataset[colType]);
+        cell.style.display = visibleCols.has(idx) ? '' : 'none';
       });
       grid.querySelectorAll('th.input-header').forEach(cell => {
-        const idx = parseInt(cell.dataset.input);
-        cell.style.display = visibleInputs.has(idx) ? '' : 'none';
+        const idx = parseInt(cell.dataset[colType]);
+        cell.style.display = visibleCols.has(idx) ? '' : 'none';
       });
+      // Lock header cells in transposed mode
+      if (T) {
+        grid.querySelectorAll('.lock-header-row th[data-output]').forEach(cell => {
+          const idx = parseInt(cell.dataset.output);
+          cell.style.display = visibleCols.has(idx) ? '' : 'none';
+        });
+      }
 
       // Filter rows and crosspoint cells
       grid.querySelectorAll('tbody tr').forEach(row => {
-        const output = parseInt(row.dataset.output);
-        const physIdx = String(outputPhysicalIndices?.[output] || (output + 1));
-        const label = outputLabels[output] || `Output ${output + 1}`;
+        const rowIdx = parseInt(row.dataset[rowType]);
+        const physIdx = String(rowPhysIdx?.[rowIdx] || (rowIdx + 1));
+        const label = rowLabels[rowIdx] || `${rowDefaultLabel} ${rowIdx + 1}`;
         const rowVisible = matchesFilter(dstFilter, physIdx, label);
         row.style.display = rowVisible ? '' : 'none';
 
         if (rowVisible) {
-          row.querySelectorAll('td[data-input]').forEach(cell => {
-            const input = parseInt(cell.dataset.input);
-            cell.style.display = visibleInputs.has(input) ? '' : 'none';
+          row.querySelectorAll(`td[data-${colType}]`).forEach(cell => {
+            const colIdx = parseInt(cell.dataset[colType]);
+            cell.style.display = visibleCols.has(colIdx) ? '' : 'none';
           });
         }
       });
@@ -2942,37 +3134,49 @@
               inputRouterMap, outputRouterMap, inputLabels, outputLabels,
               inputPhysicalIndices, outputPhysicalIndices } = virtualState;
 
+      const T = xyTransposed;
+
       // Build filtered arrays based on current search queries
+      // srcFilter = columns, dstFilter = rows (positional)
       const srcQuery = (document.getElementById('xySearchSrc')?.value || '').trim();
       const dstQuery = (document.getElementById('xySearchDst')?.value || '').trim();
       const srcFilter = parseFilterQuery(srcQuery);
       const dstFilter = parseFilterQuery(dstQuery);
 
-      const visibleInputs = [];
-      for (let i = 0; i < inputs; i++) {
-        const physIdx = String(inputPhysicalIndices?.[i] || (i + 1));
-        const label = inputLabels[i] || `Input ${i + 1}`;
-        if (matchesFilter(srcFilter, physIdx, label)) visibleInputs.push(i);
+      // Columns: normal=inputs, transposed=outputs
+      // Rows: normal=outputs, transposed=inputs
+      const colLabelsArr = T ? outputLabels : inputLabels;
+      const rowLabelsArr = T ? inputLabels : outputLabels;
+      const colPhysIdx = T ? outputPhysicalIndices : inputPhysicalIndices;
+      const rowPhysIdx = T ? inputPhysicalIndices : outputPhysicalIndices;
+      const colCount = T ? outputs : inputs;
+      const rowCount = T ? inputs : outputs;
+
+      const visibleCols = [];
+      for (let c = 0; c < colCount; c++) {
+        const physIdx = String(colPhysIdx?.[c] || (c + 1));
+        const label = colLabelsArr[c] || `${T ? 'Output' : 'Input'} ${c + 1}`;
+        if (matchesFilter(srcFilter, physIdx, label)) visibleCols.push(c);
       }
 
-      const visibleOutputs = [];
-      for (let o = 0; o < outputs; o++) {
-        const physIdx = String(outputPhysicalIndices?.[o] || (o + 1));
-        const label = outputLabels[o] || `Output ${o + 1}`;
-        if (matchesFilter(dstFilter, physIdx, label)) visibleOutputs.push(o);
+      const visibleRows = [];
+      for (let r = 0; r < rowCount; r++) {
+        const physIdx = String(rowPhysIdx?.[r] || (r + 1));
+        const label = rowLabelsArr[r] || `${T ? 'Input' : 'Output'} ${r + 1}`;
+        if (matchesFilter(dstFilter, physIdx, label)) visibleRows.push(r);
       }
 
-      if (visibleInputs.length === 0 || visibleOutputs.length === 0) {
+      if (visibleCols.length === 0 || visibleRows.length === 0) {
         canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
         if (viewport) viewport.style.display = 'none';
         return;
       }
 
-      // Build reverse lookup: original input index → filtered position
-      const inputPosMap = new Map();
-      visibleInputs.forEach((idx, pos) => inputPosMap.set(idx, pos));
-      const outputPosMap = new Map();
-      visibleOutputs.forEach((idx, pos) => outputPosMap.set(idx, pos));
+      // Build reverse lookup: index → filtered position
+      const colPosMap = new Map();
+      visibleCols.forEach((idx, pos) => colPosMap.set(idx, pos));
+      const rowPosMap = new Map();
+      visibleRows.forEach((idx, pos) => rowPosMap.set(idx, pos));
 
       const ctx = canvas.getContext('2d');
       const rect = minimap.getBoundingClientRect();
@@ -2984,13 +3188,16 @@
       canvas.height = height;
       ctx.clearRect(0, 0, width, height);
 
-      const dotSpacingX = width / visibleInputs.length;
-      const dotSpacingY = height / visibleOutputs.length;
+      const dotSpacingX = width / visibleCols.length;
+      const dotSpacingY = height / visibleRows.length;
       const dotSize = Math.max(1.5, Math.min(dotSpacingX, dotSpacingY) * 0.6);
 
       // Draw separator lines between routers (only if both sides visible)
-      if (!srcFilter.numbers && !srcFilter.text && routerAInputCount > 0 && routerAInputCount < inputs) {
-        const sepPos = inputPosMap.get(routerAInputCount);
+      // Column separator: normal=between router A/B inputs, transposed=between router A/B outputs
+      const routerAColCount = T ? routerAOutputCount : routerAInputCount;
+      const routerARowCount = T ? routerAInputCount : routerAOutputCount;
+      if (!srcFilter.numbers && !srcFilter.text && routerAColCount > 0 && routerAColCount < colCount) {
+        const sepPos = colPosMap.get(routerAColCount);
         if (sepPos !== undefined) {
           ctx.strokeStyle = 'rgba(255,255,255,0.2)';
           ctx.beginPath();
@@ -2999,8 +3206,8 @@
           ctx.stroke();
         }
       }
-      if (!dstFilter.numbers && !dstFilter.text && routerAOutputCount > 0 && routerAOutputCount < outputs) {
-        const sepPos = outputPosMap.get(routerAOutputCount);
+      if (!dstFilter.numbers && !dstFilter.text && routerARowCount > 0 && routerARowCount < rowCount) {
+        const sepPos = rowPosMap.get(routerARowCount);
         if (sepPos !== undefined) {
           ctx.strokeStyle = 'rgba(255,255,255,0.2)';
           ctx.beginPath();
@@ -3013,15 +3220,16 @@
       // Draw crosspoints for visible routes only
       for (const [outStr, inp] of Object.entries(routing)) {
         const out = parseInt(outStr);
-        if (!outputPosMap.has(out) || !inputPosMap.has(inp)) continue;
+        // In transposed mode: output is a column, input is a row
+        const colIdx = T ? out : inp;
+        const rowIdx = T ? inp : out;
+        if (!colPosMap.has(colIdx) || !rowPosMap.has(rowIdx)) continue;
         const oRouter = outputRouterMap[out] || 'A';
         const iRouter = inputRouterMap[inp] || 'A';
         const isCross = oRouter !== iRouter;
         ctx.fillStyle = isCross ? '#a273eb' : '#2ed573';
-        const colPos = inputPosMap.get(inp);
-        const rowPos = outputPosMap.get(out);
-        const x = (colPos + 0.5) * dotSpacingX;
-        const y = (rowPos + 0.5) * dotSpacingY;
+        const x = (colPosMap.get(colIdx) + 0.5) * dotSpacingX;
+        const y = (rowPosMap.get(rowIdx) + 0.5) * dotSpacingY;
         ctx.beginPath();
         ctx.arc(x, y, dotSize / 2, 0, Math.PI * 2);
         ctx.fill();
@@ -3640,6 +3848,41 @@
       { name: 'Pink', value: '#e84393' },
     ];
 
+    function buildSalvoSelectOptions(type, selectedIndex, excludeIndices) {
+      const count = virtualState ? (type === 'input' ? virtualState.inputs : virtualState.outputs) : 0;
+      if (!count) {
+        // No router connected — show just the selected value from saved data
+        return `<option value="${selectedIndex}" selected>${type === 'input' ? 'Input' : 'Output'} ${selectedIndex + 1}</option>`;
+      }
+      const labels = type === 'input' ? virtualState.inputLabels : virtualState.outputLabels;
+      const physIndices = type === 'input' ? virtualState.inputPhysicalIndices : virtualState.outputPhysicalIndices;
+      const routerMap = type === 'input' ? virtualState.inputRouterMap : virtualState.outputRouterMap;
+      let html = '';
+      for (let i = 0; i < count; i++) {
+        if (excludeIndices && excludeIndices.has(i) && i !== selectedIndex) continue;
+        const phys = physIndices?.[i] || (i + 1);
+        const router = routerMap?.[i] || 'A';
+        const label = labels[i] || `${type === 'input' ? 'Input' : 'Output'} ${phys}`;
+        html += `<option value="${i}"${i === selectedIndex ? ' selected' : ''}>[${router}${phys}] ${escapeHtml(label)}</option>`;
+      }
+      return html;
+    }
+
+    function buildSalvoRouteRow(route, routeIndex, salvoId, usedOutputs) {
+      return `<div class="salvo-route-row" data-route-index="${routeIndex}" data-salvo-id="${salvoId}">
+        <select class="route-output-select" data-field="output">${buildSalvoSelectOptions('output', route.output, usedOutputs)}</select>
+        <span class="route-arrow">&larr;</span>
+        <select class="route-input-select" data-field="input">${buildSalvoSelectOptions('input', route.input)}</select>
+        <button class="route-remove" title="Remove route">&times;</button>
+      </div>`;
+    }
+
+    function buildSalvoBodyHTML(salvo) {
+      const usedOutputs = new Set(salvo.routes.map(r => r.output));
+      return salvo.routes.map((r, ri) => buildSalvoRouteRow(r, ri, salvo.id, usedOutputs)).join('') +
+        `<div class="salvo-route-add"><button class="salvo-add-route-btn" data-salvo-id="${salvo.id}">+ Add Route</button></div>`;
+    }
+
     function renderSalvos() {
       const salvosList = document.getElementById('salvosList');
       const salvosEmpty = document.getElementById('salvosEmpty');
@@ -3677,7 +3920,7 @@
             <span class="salvo-drag-handle" title="Drag to reorder">⋮⋮</span>
             <span class="salvo-color-dot" style="background:${salvo.color || '#555'}" data-salvo-id="${salvo.id}" title="Click to change color"></span>
             <div style="flex:1">
-              <div class="salvo-card-name">${salvo.protected ? '🔒 ' : ''}${escapeHtml(salvo.name)}</div>
+              <div class="salvo-card-name">${salvo.protected ? '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-1px;margin-right:4px"><path fill-rule="evenodd" d="M8 0a4 4 0 0 1 4 4v2.05a2.5 2.5 0 0 1 2 2.45v5a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 2 13.5v-5a2.5 2.5 0 0 1 2-2.45V4a4 4 0 0 1 4-4M4.5 7A1.5 1.5 0 0 0 3 8.5v5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 11.5 7zM8 1a3 3 0 0 0-3 3v2h6V4a3 3 0 0 0-3-3"/></svg>' : ''}${escapeHtml(salvo.name)}</div>
               <div class="salvo-card-info">${infoText}</div>
             </div>
             <span class="salvo-disclosure">▶</span>
@@ -3690,18 +3933,8 @@
             ${colorSwatches}
             <span class="salvo-color-clear" data-salvo-id="${salvo.id}" title="No color"></span>
           </div>
-          <div class="salvo-card-body">
-            ${salvo.routes.map(r => {
-              const cross = r.outputRouter !== r.inputRouter;
-              const outColor = getLabelColor('output', r.output);
-              const inColor = getLabelColor('input', r.input);
-              return `<div class="salvo-route-row">
-                <span class="route-output"${outColor ? ` style="color:${outColor}"` : ''}>${escapeHtml(r.outputLabel || `Out ${r.output + 1}`)}</span>
-                <span class="route-arrow">&larr;</span>
-                <span class="route-input"${inColor ? ` style="color:${inColor}"` : ''}>${escapeHtml(r.inputLabel || `In ${r.input + 1}`)}</span>
-                ${cross ? '<span class="route-cross">[cross]</span>' : ''}
-              </div>`;
-            }).join('')}
+          <div class="salvo-card-body" data-salvo-id="${salvo.id}">
+            ${buildSalvoBodyHTML(salvo)}
           </div>
         `;
 
@@ -3769,7 +4002,7 @@
       for (const salvo of salvos) {
         const btn = document.createElement('button');
         btn.className = 'salvo-quick-btn';
-        btn.textContent = (salvo.protected ? '🔒 ' : '') + salvo.name;
+        btn.innerHTML = (salvo.protected ? '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-1px;margin-right:2px"><path fill-rule="evenodd" d="M8 0a4 4 0 0 1 4 4v2.05a2.5 2.5 0 0 1 2 2.45v5a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 2 13.5v-5a2.5 2.5 0 0 1 2-2.45V4a4 4 0 0 1 4-4M4.5 7A1.5 1.5 0 0 0 3 8.5v5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 11.5 7zM8 1a3 3 0 0 0-3 3v2h6V4a3 3 0 0 0-3-3"/></svg>' : '') + escapeHtml(salvo.name);
         btn.title = `Recall ${salvo.routes?.length || 0} routes${salvo.protected ? ' (protected — will confirm)' : ''}`;
         btn.dataset.id = salvo.id;
         if (salvo.color) {
@@ -4367,23 +4600,62 @@
         document.removeEventListener('mouseup', onDocumentMouseUp);
       }
 
-      // Row/column header highlighting on hover
+      // Row/column crosshair highlighting on hover — only left of and above the cell
+      function addCrosshair(cell) {
+        const colAttr = xyTransposed ? 'output' : 'input';
+        const rowAttr = xyTransposed ? 'input' : 'output';
+        const colVal = parseInt(cell.dataset[colAttr]);
+        const rowVal = parseInt(cell.dataset[rowAttr]);
+
+        // Highlight column and row headers
+        const colHeader = xyGrid.querySelector(`th.input-header[data-${colAttr}="${colVal}"]`);
+        const rowHeader = xyGrid.querySelector(`th.output-header[data-${rowAttr}="${rowVal}"]`);
+        if (colHeader) colHeader.classList.add('highlight');
+        if (rowHeader) rowHeader.classList.add('highlight');
+
+        // Highlight cells in the same row, left of hovered cell (including row headers)
+        const row = cell.closest('tr');
+        if (row) {
+          // Always highlight lock-cell, output-index, output-header (they're to the left)
+          row.querySelectorAll('td.lock-cell, td.output-index, th.output-header').forEach(td => {
+            td.classList.add('highlight-row');
+          });
+          // Highlight crosspoint cells to the left
+          row.querySelectorAll(`td[data-${colAttr}]`).forEach(td => {
+            if (parseInt(td.dataset[colAttr]) < colVal) {
+              td.classList.add('highlight-row');
+            }
+          });
+        }
+
+        // Highlight cells in the same column, above hovered cell
+        xyGrid.querySelectorAll(`td[data-${colAttr}="${colVal}"]`).forEach(td => {
+          if (parseInt(td.dataset[rowAttr]) < rowVal) {
+            td.classList.add('highlight-col');
+          }
+        });
+        // Also highlight column index and lock header cells
+        xyGrid.querySelectorAll(`th.input-index[data-${colAttr}="${colVal}"]`).forEach(th => {
+          th.classList.add('highlight');
+        });
+      }
+
+      function removeCrosshair() {
+        xyGrid.querySelectorAll('.highlight-row').forEach(el => el.classList.remove('highlight-row'));
+        xyGrid.querySelectorAll('.highlight-col').forEach(el => el.classList.remove('highlight-col'));
+        xyGrid.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+      }
+
       xyGrid.addEventListener('mouseover', (e) => {
         const cell = e.target.closest('td[data-output][data-input]');
         if (!cell || isDragging) return;
-        const inputHeader = xyGrid.querySelector(`th.input-header[data-input="${cell.dataset.input}"]`);
-        const outputHeader = xyGrid.querySelector(`th.output-header[data-output="${cell.dataset.output}"]`);
-        if (inputHeader) inputHeader.classList.add('highlight');
-        if (outputHeader) outputHeader.classList.add('highlight');
+        addCrosshair(cell);
       });
 
       xyGrid.addEventListener('mouseout', (e) => {
         const cell = e.target.closest('td[data-output][data-input]');
         if (!cell || isDragging) return;
-        const inputHeader = xyGrid.querySelector(`th.input-header[data-input="${cell.dataset.input}"]`);
-        const outputHeader = xyGrid.querySelector(`th.output-header[data-output="${cell.dataset.output}"]`);
-        if (inputHeader) inputHeader.classList.remove('highlight');
-        if (outputHeader) outputHeader.classList.remove('highlight');
+        removeCrosshair();
       });
 
       xyGrid.addEventListener('mousedown', (e) => {
@@ -4395,7 +4667,7 @@
         dragStart = { output: parseInt(td.dataset.output), input: parseInt(td.dataset.input) };
         lastDragEnd = dragStart;
         isDragging = true;
-        xyGrid.querySelectorAll('.input-header.highlight, .output-header.highlight').forEach(el => el.classList.remove('highlight'));
+        removeCrosshair();
         updateDragPreview(dragStart, dragStart);
         document.addEventListener('mousemove', onDocumentMouseMove);
         document.addEventListener('mouseup', onDocumentMouseUp);
@@ -4755,8 +5027,137 @@
 
         const header = e.target.closest('.salvo-card-header');
         if (header && !e.target.closest('.salvo-card-actions')) {
-          header.closest('.salvo-card').classList.toggle('expanded');
+          const card = header.closest('.salvo-card');
+          const isExpanding = !card.classList.contains('expanded');
+          card.classList.toggle('expanded');
+          // Rebuild body on expand so selects reflect current virtual state
+          if (isExpanding) {
+            const salvoId = card.dataset.id;
+            const salvo = salvos.find(s => s.id === salvoId);
+            if (salvo) {
+              const body = card.querySelector('.salvo-card-body');
+              if (body) body.innerHTML = buildSalvoBodyHTML(salvo);
+            }
+          }
         }
+      });
+
+      // Salvo route editing — change source/destination selects
+      document.getElementById('salvosList').addEventListener('change', async (e) => {
+        const select = e.target.closest('.route-output-select, .route-input-select');
+        if (!select) return;
+        const row = select.closest('.salvo-route-row');
+        const salvoId = row.dataset.salvoId;
+        const routeIndex = parseInt(row.dataset.routeIndex);
+        const salvo = salvos.find(s => s.id === salvoId);
+        if (!salvo || !salvo.routes[routeIndex]) return;
+
+        const newIdx = parseInt(select.value);
+        const field = select.dataset.field; // 'input' or 'output'
+        const route = salvo.routes[routeIndex];
+        route[field] = newIdx;
+
+        // Update labels and router info from current virtual state
+        if (virtualState) {
+          if (field === 'output') {
+            route.outputLabel = virtualState.outputLabels[newIdx] || `Output ${newIdx + 1}`;
+            route.outputRouter = virtualState.outputRouterMap?.[newIdx] || 'A';
+          } else {
+            route.inputLabel = virtualState.inputLabels[newIdx] || `Input ${newIdx + 1}`;
+            route.inputRouter = virtualState.inputRouterMap?.[newIdx] || 'A';
+          }
+        }
+
+        const result = await api.saveSalvo(salvo);
+        if (result.success) {
+          salvos = result.salvos;
+          // Re-render body to update excluded destinations and info
+          const body = document.querySelector(`.salvo-card-body[data-salvo-id="${salvoId}"]`);
+          if (body) body.innerHTML = buildSalvoBodyHTML(salvo);
+          const card = body?.closest('.salvo-card');
+          if (card) {
+            const crossRoutes = salvo.routes.filter(r => r.outputRouter !== r.inputRouter).length;
+            const date = new Date(salvo.createdAt).toLocaleDateString();
+            const info = card.querySelector('.salvo-card-info');
+            if (info) info.textContent = `${salvo.routes.length} routes${crossRoutes > 0 ? `, ${crossRoutes} cross-router` : ''} | ${date}`;
+          }
+          renderSalvoQuickButtons();
+        }
+      });
+
+      // Salvo route remove button
+      document.getElementById('salvosList').addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.route-remove');
+        if (!removeBtn) return;
+        e.stopPropagation();
+        const row = removeBtn.closest('.salvo-route-row');
+        const salvoId = row.dataset.salvoId;
+        const routeIndex = parseInt(row.dataset.routeIndex);
+        const salvo = salvos.find(s => s.id === salvoId);
+        if (!salvo) return;
+        salvo.routes.splice(routeIndex, 1);
+        api.saveSalvo(salvo).then(result => {
+          if (result.success) {
+            salvos = result.salvos;
+            // Re-render just the body to keep expanded state
+            const body = document.querySelector(`.salvo-card-body[data-salvo-id="${salvoId}"]`);
+            if (body) {
+              body.innerHTML = buildSalvoBodyHTML(salvo);
+            }
+            // Update info text
+            const card = body?.closest('.salvo-card');
+            if (card) {
+              const crossRoutes = salvo.routes.filter(r => r.outputRouter !== r.inputRouter).length;
+              const date = new Date(salvo.createdAt).toLocaleDateString();
+              const info = card.querySelector('.salvo-card-info');
+              if (info) info.textContent = `${salvo.routes.length} routes${crossRoutes > 0 ? `, ${crossRoutes} cross-router` : ''} | ${date}`;
+            }
+            renderSalvoQuickButtons();
+          }
+        });
+      });
+
+      // Salvo add route button
+      document.getElementById('salvosList').addEventListener('click', (e) => {
+        const addBtn = e.target.closest('.salvo-add-route-btn');
+        if (!addBtn) return;
+        e.stopPropagation();
+        const salvoId = addBtn.dataset.salvoId;
+        const salvo = salvos.find(s => s.id === salvoId);
+        if (!salvo || !virtualState) return;
+
+        // Find first unused output
+        const usedOutputs = new Set(salvo.routes.map(r => r.output));
+        let firstFree = 0;
+        for (let i = 0; i < virtualState.outputs; i++) {
+          if (!usedOutputs.has(i)) { firstFree = i; break; }
+        }
+        const newRoute = {
+          output: firstFree,
+          input: 0,
+          outputLabel: virtualState.outputLabels[firstFree] || `Output ${firstFree + 1}`,
+          inputLabel: virtualState.inputLabels[0] || 'Input 1',
+          outputRouter: virtualState.outputRouterMap?.[firstFree] || 'A',
+          inputRouter: virtualState.inputRouterMap?.[0] || 'A'
+        };
+        salvo.routes.push(newRoute);
+        api.saveSalvo(salvo).then(result => {
+          if (result.success) {
+            salvos = result.salvos;
+            const body = document.querySelector(`.salvo-card-body[data-salvo-id="${salvoId}"]`);
+            if (body) {
+              body.innerHTML = buildSalvoBodyHTML(salvo);
+            }
+            const card = body?.closest('.salvo-card');
+            if (card) {
+              const crossRoutes = salvo.routes.filter(r => r.outputRouter !== r.inputRouter).length;
+              const date = new Date(salvo.createdAt).toLocaleDateString();
+              const info = card.querySelector('.salvo-card-info');
+              if (info) info.textContent = `${salvo.routes.length} routes${crossRoutes > 0 ? `, ${crossRoutes} cross-router` : ''} | ${date}`;
+            }
+            renderSalvoQuickButtons();
+          }
+        });
       });
 
       // Import dialog
@@ -4789,6 +5190,26 @@
 
       // Undo button
       document.getElementById('xyUndoBtn').addEventListener('click', performUndo);
+
+      // Transpose checkbox in settings
+      document.getElementById('xyTranspose').addEventListener('change', async (e) => {
+        xyTransposed = e.target.checked;
+        document.getElementById('xyGridContainer').classList.toggle('transposed', xyTransposed);
+        // Swap filter placeholder text
+        const srcInput = document.getElementById('xySearchSrc');
+        const dstInput = document.getElementById('xySearchDst');
+        srcInput.placeholder = xyTransposed ? 'Filter destinations... (e.g. 1-10,17,20)' : 'Filter sources... (e.g. 1-10,17,20)';
+        dstInput.placeholder = xyTransposed ? 'Filter sources... (e.g. 1-10,17,20)' : 'Filter destinations... (e.g. 1-10,17,20)';
+        // Clear filters
+        srcInput.value = '';
+        dstInput.value = '';
+        // Re-render grid
+        renderXYGrid();
+        // Persist setting
+        const settings = await api.getSettings();
+        settings.xyTransposed = xyTransposed;
+        api.saveSettings(settings);
+      });
 
       // Keyboard shortcuts
       document.addEventListener('keydown', (e) => {
