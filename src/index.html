@@ -532,6 +532,7 @@
     .xy-grid-container {
       flex: 1;
       overflow: auto;
+      overscroll-behavior: contain;
       position: relative;
       background: rgba(0,0,0,0.2);
       border-radius: 8px;
@@ -4674,8 +4675,17 @@
         document.addEventListener('mouseup', onDocumentMouseUp);
       });
 
-      // Scroll updates minimap
-      document.getElementById('xyGridContainer').addEventListener('scroll', () => updateMinimap());
+      // Scroll updates minimap (throttled to animation frames)
+      let minimapRafPending = false;
+      document.getElementById('xyGridContainer').addEventListener('scroll', () => {
+        if (!minimapRafPending) {
+          minimapRafPending = true;
+          requestAnimationFrame(() => {
+            updateMinimap();
+            minimapRafPending = false;
+          });
+        }
+      });
 
       // Minimap click/drag (delegated since minimap is rebuilt with the grid)
       let minimapDragging = false;
