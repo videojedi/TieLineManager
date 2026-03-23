@@ -512,20 +512,12 @@
     }
 
     /* Protected grid dimming */
-    .xy-grid-container .xy-grid td,
-    .xy-grid-container .xy-grid th:not(.corner-cell) {
-      transition: opacity 0.4s ease-in-out, filter 0.4s ease-in-out;
+    .xy-grid-container {
+      transition: filter 0.4s ease-in-out, opacity 0.4s ease-in-out;
     }
-    .xy-grid-container.protected .xy-grid td:not(.lock-cell):not(.output-index) {
+    .xy-grid-container.protected {
+      filter: grayscale(100%);
       opacity: 0.5;
-      filter: grayscale(100%);
-      pointer-events: none;
-      cursor: not-allowed;
-    }
-    .xy-grid-container.protected .xy-grid td.lock-cell,
-    .xy-grid-container.protected .xy-grid td.output-index,
-    .xy-grid-container.protected .xy-grid th:not(.corner-cell) {
-      filter: grayscale(100%);
       pointer-events: none;
     }
 
