@@ -16,7 +16,7 @@ Tie-Line Manager automates this process:
 - Automatically allocates tie-lines when cross-router routes are requested
 - Presents both routers as one seamless virtual router
 
-## Latest Release: v1.6.0
+## Latest Release: v1.7.0
 
 Download the latest installers from the [GitHub Releases](https://github.com/videojedi/TieLineManager/releases/latest) page.
 

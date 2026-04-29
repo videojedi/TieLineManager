@@ -359,6 +359,15 @@ function setupIPC() {
   // Connection management
   ipcMain.handle('connect-router', async (event, routerId, config) => {
     try {
+      const otherId = routerId === 'A' ? 'B' : 'A';
+      const otherController = routerId === 'A' ? controllerB : controllerA;
+      const otherSettings = routerId === 'A' ? settings.routerB : settings.routerA;
+      const otherHost = otherController?.host ?? otherSettings?.host;
+      const otherPort = otherController?.port ?? otherSettings?.port;
+      if (otherController && String(otherHost) === String(config.host) && Number(otherPort) === Number(config.port)) {
+        return { success: false, error: `Router ${otherId} is already using ${config.host}:${config.port}. Routers A and B must target different devices.` };
+      }
+
       probeLocalNetwork();
       const routerConfig = routerId === 'A' ? settings.routerA : settings.routerB;
       Object.assign(routerConfig, config);
